@@ -14,7 +14,7 @@ class RequestLoggingMiddleware:
     def __call__(self, request):
         # BEFORE
         request_id = request.headers.get("X-Request-ID", str(uuid.uuid4()))
-        request.request_id = request_id
+        # request.request_id = request_id
         request.start_time = time.time()
 
         # SET it in contextvars so everyone can read it

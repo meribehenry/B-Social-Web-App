@@ -1,4 +1,3 @@
-from django.shortcuts import render
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -15,7 +14,7 @@ class TestView(APIView):
     def get(self, request):
         
         # response = Response("Welcome to the party") 
-        logger.info("Message")
+        logger.info("Message", extra={"time": "ol"})
         return Response("Welcome to the party")
 
 class BSocialTokenRefreshView(TokenRefreshView):

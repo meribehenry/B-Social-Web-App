@@ -1,8 +1,12 @@
 from django.core.exceptions import ImproperlyConfigured
+from core.logger.logger_client import get_logger
 from ..clients.redis_client import get_redis_client
 from redis.exceptions import RedisError
 from .lua_script import TOKEN_BUCKET_LUA
 import time
+
+
+logger = get_logger(__name__)
 
 
 class RateLimiterUnavailable(Exception):
@@ -34,10 +38,9 @@ def check_token_bucket(
             "Requested tokens must be greater than zero."
         )
 
-    print("Checking Bucket")
+
     try:
         redis_client = get_redis_client()
-        print(f"Got client", redis_client)
 
         now = time.time()
         from .lua_script import TOKEN_BUCKET_LUA
@@ -50,7 +53,7 @@ def check_token_bucket(
             now,
             requested,
         )
-        print(f"Result: {result}")
+
 
         allowed = int(result[0])
         remaining = float(result[1])
@@ -62,5 +65,5 @@ def check_token_bucket(
         return False, wait_time_in_secs
 
     except RedisError as exc:
-        print("Error No Redis", exc)
+        logger.error(f"Redis Error {exc}")
         raise RateLimiterUnavailable from exc

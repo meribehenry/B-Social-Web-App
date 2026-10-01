@@ -62,6 +62,7 @@ def check_token_bucket(
             return True, None
 
         wait_time_in_secs = (requested - remaining)/ refill_rate
+        logger.info(f"Rate limited wait. Wait {wait_time_in_secs} seconds")
         return False, wait_time_in_secs
 
     except RedisError as exc:

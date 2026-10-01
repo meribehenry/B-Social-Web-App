@@ -45,7 +45,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'django_redis',
-    
+    'rest_framework_simplejwt.token_blacklist',
+    'django_celery_beat'
 
 ]
 
@@ -219,6 +220,7 @@ CELERY_WORKER_PREFETCH_MULTIPLIER = 1
 CELERY_TASK_TRACK_STARTED  = True
 CELERY_TASK_TIME_LIMIT = 30 * 60
 CELERY_TASK_SOFT_TIME_LIMIT = 25 * 60
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 
 REDIS_URL = os.environ.get("REDIS_URL")
 

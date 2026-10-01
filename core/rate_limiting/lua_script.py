@@ -58,7 +58,7 @@ if tokens >= requested then
     redis.call(
         "EXPIRE",
         key,
-        86400
+        21600
     )
 
     return {1, tostring(tokens)}

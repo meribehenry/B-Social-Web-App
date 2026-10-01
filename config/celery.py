@@ -7,7 +7,7 @@ import os
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings.development")
  
 app = Celery("b-social")
-app.config_from_object("django.conf:settings.base", namespace="CELERY")
+app.config_from_object("django.conf:settings", namespace="CELERY")
 app.autodiscover_tasks()   # finds tasks.py inside every INSTALLED_APPS entry
 
 

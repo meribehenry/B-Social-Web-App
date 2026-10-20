@@ -32,7 +32,7 @@ def validate_password(data):
 
 class RegistrationSerializer(serializers.Serializer):
     email = serializers.EmailField()
-    name = serializers.CharField(max_length=30)
+    display_name = serializers.CharField(max_length=30)
     gender = serializers.CharField()
     password = serializers.CharField()
     confirm_password = serializers.CharField()

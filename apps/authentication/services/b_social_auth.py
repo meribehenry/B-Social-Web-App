@@ -1,6 +1,6 @@
 from datetime import datetime, timezone, timedelta
-
 from django.db import transaction
+from django.db.models import F
 from core.response import ServiceResponseBuilder
 from django.contrib.auth.hashers import make_password
 from ..models import  UserToken
@@ -13,12 +13,12 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework import status
 from core.logger.logger_client import get_logger
 from ..tasks.email_tasks import send_welcome_email, send_otp_email
+from apps.user.service import UserService
 import secrets
 import random
 import hashlib
 
 
-User = get_user_model()
 logger = get_logger(__name__)
 
 
@@ -26,6 +26,7 @@ class BSocialAuthService():
 
     def __init__(self) -> None:
         self.service_response_builder = ServiceResponseBuilder()
+        self.user_service = UserService()
         self.result = {}
         self.error = {}
 
@@ -54,8 +55,7 @@ class BSocialAuthService():
         token_record = UserToken.objects.filter(email=email).first()
 
         if token_record.otp_hash != self.hash_value(submitted_otp_code):
-            token_record.attempts = token_record.attempts + 1
-            token_record.save()
+            UserToken.objects.filter(id=token_record.id).update(attempts=F("attempts") + 1, )
             logger.info(f"OTP verification failed for {token_record.purpose}")
             return False
         
@@ -69,7 +69,7 @@ class BSocialAuthService():
             random = secrets.token_hex(4)
             username = name + "_" + random
 
-            user = User.objects.filter(username=username).exists()
+            user = self.user_service.get_user_object(identifier=email, retrival_method="username")
             if not user:
                 logger.info(f"Username {username} created for {email}")
                 return username    
@@ -83,7 +83,7 @@ class BSocialAuthService():
         validated_data = serializer.validated_data
         email = validated_data.get("email")
 
-        user = User.objects.filter(email=email).first()
+        user = self.user_service.get_user_object(identifier=email, retrival_method="email")
 
         if user and (user.email_verified or user.status == "active"): 
             self.error = self.service_response_builder.conflict_error(
@@ -108,14 +108,22 @@ class BSocialAuthService():
         validated_data["password"] = make_password(validated_data["password"])
         validated_data.pop("confirm_password")
 
-        new_user = User.objects.create(**validated_data)
-        new_user.save()
-        logger.info("User successfully registered an account. Verification required next")
+        new_user = self.user_service.create_new_user(validated_data)
+
+        if not new_user:
+            self.error = self.service_response_builder.internal_server_error(
+                message =  "Could not create account. Please try again",
+            )
+            logger.info("Could not create account")
+            return self.result, self.error
+
+        logger.info("User successfully registered an account. Please verify your email to continue")
 
         otp = self.generate_or_update_otp(email, "REGISTRATION")
         
         # Send email here
         send_otp_email.delay(email, {"otp":otp})
+        print(otp)
 
         self.result = self.service_response_builder.result(
             message="An email containing OTP code has been sent. Verify your email to create an account", 
@@ -140,8 +148,8 @@ class BSocialAuthService():
 
         logger.info(f"Verifying OTP for {purpose}")
 
-
-        user = User.objects.filter(email=email).first()
+        
+        user = self.user_service.get_user_object(identifier=email, retrival_method="email")
         token_record = UserToken.objects.filter(email=email, purpose=purpose).first()
 
         # If OTP or User not found show a genetic message
@@ -172,19 +180,23 @@ class BSocialAuthService():
 
 
         if purpose == "REGISTRATION":
+            with transaction.atomic():
+                self.user_service.mark_user_verified(user)
+                token_record.delete()
 
-            user.email_verified = True
-            user.status = "active"
-            user.is_active  = True
-            user.save()
-            token_record.delete()
             logger.info("Account successfully verified")
 
+            User = get_user_model()
+
+            optimised_user = User.objects.defer(
+                "has_received_welcome_email"
+                ).select_related("profile").get(pk=user.id)
+
             # Send welcome email here
-            send_welcome_email.delay(email, {"name":user.name})
+            send_welcome_email.delay(email)
 
             # Create access and refresh token
-            refresh = RefreshToken.for_user(user)
+            refresh = RefreshToken.for_user(optimised_user)
             access_token = str(refresh.access_token)
             refresh_token = str(refresh)
 
@@ -195,10 +207,9 @@ class BSocialAuthService():
                 data= {
                     "access_token": access_token,
                     "refresh_token": refresh_token,
-                    "user": UserSerializer(user).data
+                    "user": UserSerializer(optimised_user).data
                 }
             )
-            return self.result, self.error
         
         elif purpose == 'PASSWORD_RESET':
             # Generate temporary reset token handshake
@@ -219,7 +230,7 @@ class BSocialAuthService():
                 }
             )
         
-            return self.result, self.error
+        return self.result, self.error
 
 
     def resend_OTP(self, data):
@@ -233,7 +244,7 @@ class BSocialAuthService():
 
         logger.info(f"Resending OTP for {purpose}")
 
-        user = User.objects.filter(email=email).first()
+        user = self.user_service.get_user_object(identifier=email, retrival_method="email")
 
 
         if purpose == "REGISTRATION" and user and user.email_verified:
@@ -254,6 +265,7 @@ class BSocialAuthService():
         if user:
             otp = self.generate_or_update_otp(email, purpose)
             send_otp_email.delay(email, {"otp":otp})
+            print(otp)
             logger.info("OTP Resent")
 
         self.result = self.service_response_builder.result(
@@ -273,7 +285,7 @@ class BSocialAuthService():
         email = validated_data.get("email")
         password = validated_data.get("password")
 
-        user = User.objects.filter(email=email).first()
+        user = self.user_service.get_user_object(identifier=email, retrival_method="email")
 
 
         if user and not user.email_verified:
@@ -296,7 +308,13 @@ class BSocialAuthService():
 
         logger.info("Login successful")
 
-        refresh = RefreshToken.for_user(user)
+        User = get_user_model()
+
+        optimised_user = User.objects.defer(
+                        "has_received_welcome_email"
+                        ).select_related("profile").get(pk=user.id)
+
+        refresh = RefreshToken.for_user(optimised_user)
         access_token = str(refresh.access_token)
         refresh_token = str(refresh)
 
@@ -306,7 +324,8 @@ class BSocialAuthService():
             message="Successfully logged in",
             data={
                 "access_token": access_token,
-                "refresh_token": refresh_token
+                "refresh_token": refresh_token,
+                "user": UserSerializer(optimised_user).data
             },
             status_code=status.HTTP_200_OK
         )
@@ -323,7 +342,7 @@ class BSocialAuthService():
         email = validated_data.get("email")
         purpose = "PASSWORD_RESET"
 
-        user = User.objects.filter(email=email).first()
+        user = self.user_service.get_user_object(identifier=email, retrival_method="email")
 
 
         if user and not user.email_verified: 
@@ -336,6 +355,7 @@ class BSocialAuthService():
         if user and user.email_verified:
             otp = self.generate_or_update_otp(email, purpose)
             send_otp_email.delay(email, {"otp":otp})
+            print(otp)
 
         self.result = self.service_response_builder.result(
             message =  "An email containing the OTP code has been sent",
@@ -351,10 +371,10 @@ class BSocialAuthService():
 
         validated_data = serializer.validated_data
         email = validated_data.get("email")
-        password = validated_data.get("new_password")
+        password = validated_data.get("password")
         password_reset_token = validated_data.get("password_reset_token")
 
-        user = User.objects.filter(email=email).first()
+        user = self.user_service.get_user_object(identifier=email, retrival_method="email")
         token_record = UserToken.objects.filter(email=email, purpose='PASSWORD_RESET').first()
 
         if not user or not token_record:
@@ -374,8 +394,7 @@ class BSocialAuthService():
 
         with transaction.atomic():
             # Update user's password securely
-            user.set_password(password)
-            user.save()
+            self.user_service.change_password(user, make_password(password))
         
             # Completely remove token record after usage
             token_record.delete()

@@ -11,7 +11,7 @@ from core.logger.logger_client import get_logger
 from . import throttle
 
 
-b_social_auth_service = BSocialAuthService()
+
 api_success_response_handler = APISuccessResponseHandler()
 api_error_response_handler = APIErrorResponseHandler()
 logger = get_logger(__name__)
@@ -31,6 +31,8 @@ class RegristrationView(APIView):
     throttle_classes = [throttle.RegisterTokenBucketThrottle]
 
     def post(self, request):
+        print("here")
+        b_social_auth_service = BSocialAuthService()
         result, error = b_social_auth_service.register(request.data)
 
         if error:
@@ -52,6 +54,7 @@ class LoginView(APIView):
     throttle_classes = [throttle.LoginTokenBucketThrottle]
 
     def post(self, request):
+        b_social_auth_service = BSocialAuthService()
         result, error = b_social_auth_service.login(request.data)
 
         if error:
@@ -76,6 +79,7 @@ class VerifyOTPView(APIView):
     throttle_classes = [throttle.OTPVerificationTokenBucketThrottle]
 
     def post(self, request):
+        b_social_auth_service = BSocialAuthService()
         result, error = b_social_auth_service.OTP_verification(request.data)
 
         if error:
@@ -85,10 +89,22 @@ class VerifyOTPView(APIView):
                 status_code=error.get("status_code"),
             )
 
-        return api_success_response_handler.success(
+        if result.get("data").get("reset_token"):
+            return api_success_response_handler.success(
                 message=result.get("message"), 
                 status_code=result.get("status_code"),
                 data = result.get("data")
+            )
+    
+
+        refresh_token = result.get("data").pop("refresh_token")
+
+        return api_success_response_handler.success_extra_data_cookie(
+                message=result.get("message"), 
+                status_code=result.get("status_code"),
+                data = result.get("data"),
+                name = "refresh_token",
+                value = refresh_token
             )
     
 
@@ -96,6 +112,7 @@ class ResendOTPView(APIView):
     throttle_classes = [throttle.ResendOTPTokenBucketThrottle]
 
     def post(self, request):
+        b_social_auth_service = BSocialAuthService()
         result, error = b_social_auth_service.resend_OTP(request.data)
 
         if error:
@@ -116,6 +133,7 @@ class PasswordResetRequestView(APIView):
     throttle_classes = [throttle.PasswordResetRequestTokenBucketThrottle]
 
     def post(self, request):
+        b_social_auth_service = BSocialAuthService()
         result, error = b_social_auth_service.password_reset_request(request.data)
 
         if error:
@@ -136,6 +154,7 @@ class PasswordResetView(APIView):
     throttle_classes = [throttle.PasswordResetTokenBucketThrottle]
     
     def post(self, request):
+        b_social_auth_service = BSocialAuthService()
         result, error = b_social_auth_service.password_reset(request.data)
 
         if error:
@@ -158,6 +177,7 @@ class BSocialTokenRefreshView(TokenRefreshView):
     serializer_class = BSocialTokenRefreshSerializer
 
     def post(self, request, *args, **kwargs):
+        b_social_auth_service = BSocialAuthService()
         logger.info("Token Refresh starting....")
 
         refresh_token = request.COOKIES.get("refresh_token")
@@ -179,6 +199,7 @@ class LogoutView(APIView):
 
     def post(self, request):
         # request.auth is a validated SimpleJWT token.
+        b_social_auth_service = BSocialAuthService()
         access_token = request.auth
         refresh_token = request.COOKIES.get("refresh_token")
 

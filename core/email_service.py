@@ -12,13 +12,22 @@ executor = ThreadPoolExecutor(max_workers=20)
 
 
 class EmailService():
+    """
+    The EmailService handles send of email
+    """
 
     def __init__(self):
+        """
+        Get the URL and API key
+        """
         self.url = "https://api.brevo.com/v3/smtp/email"
         self.api_key = os.environ.get("BREVO_API_KEY")
 
     
     def _get_header(self):
+        """
+        Returns the header for the email request
+        """
         return {
             "accept": "application/json",
             "api-key": self.api_key,
@@ -27,6 +36,9 @@ class EmailService():
     
 
     def _build_email(self, subject, recipient, html):
+        """
+        Builds the email body 
+        """
         return {
             "sender": {
                 "name": "B-Social",
@@ -44,6 +56,9 @@ class EmailService():
         }
     
     def _send_async_email(self, header, data) -> bool:
+        """
+        Sends email to Brevo
+        """
         try:
             response = requests.post(self.url, headers=header, json=data, timeout=15)
             logger.info(f"Email sent successfully 💯: {response.status_code}")
@@ -51,21 +66,23 @@ class EmailService():
 
         except requests.exceptions.Timeout:
             logger.error("Brevo timed out")
+            raise requests.exceptions.Timeout
 
         except requests.exceptions.ConnectionError:
             logger.error("Cannot connect to Brevo")
+            raise requests.exceptions.ConnectionError
 
-        except requests.exceptions.HTTPError as e:
-            print(e)
+        except requests.exceptions.HTTPError:
             logger.error("Brevo HTTP Error")
+            raise requests.exceptions.HTTPError
 
         except requests.exceptions.RequestException:
             logger.error("Unexpected Brevo error")
+            raise requests.exceptions.RequestException
 
         except Exception:
-            logger.error("Unexpected Brevo error") 
-
-        return False       
+            logger.error("Unexpected error occured") 
+            raise Exception      
 
     
     def send_email(self, email:str, values:dict, subject:str, template_name=None, html_content_to_add=None,):

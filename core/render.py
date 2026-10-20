@@ -12,15 +12,10 @@ class UniversalJSONRenderer(JSONRenderer):
         # Standardized blueprint with separate error keys
         response_payload = {
             'status': 'success' if is_success else 'error',
-            # 'message': None,
-            # 'data': None,
-            # 'error': None,
-            # 'field_errors': None,
-            # 'pagination': None
         }
 
         if is_success:
-            # Case 1: Paginated View
+            # Case 1: Paginated View from generics
             if isinstance(data, dict) and 'pagination' in data and 'results' in data:
                 response_payload['data'] = data['results']
                 response_payload['pagination'] = data['pagination']
@@ -31,7 +26,7 @@ class UniversalJSONRenderer(JSONRenderer):
                 response_payload['data'] = data.get('data')
                 response_payload['pagination'] = data.get('pagination')
 
-            # Case 3: Standard unpaginated payload
+            # Case 3: Standard unpaginated payload. The last resort
             else:
                 response_payload['data'] = data
 
@@ -42,13 +37,14 @@ class UniversalJSONRenderer(JSONRenderer):
                     response_payload['message'] = str(data['detail'])
                     response_payload['error'] = str(data['detail'])
                     
-                    if 'data' in data:
-                        response_payload['data'] = data.get('data')
 
-                elif 'message' in data or "error" in data:
+                elif 'message' in data and "error" in data:
                     # Custom Error
                     response_payload['message'] = str(data['message'])
                     response_payload['error'] = str(data['error'])
+
+                    if 'data' in data:  # For registration or login error where I need to send the user information
+                        response_payload['data'] = data.get('data')
                 else:
                     # Serializer Field Validation Errors (400)
                     logger.info("Serializer error")
@@ -56,7 +52,7 @@ class UniversalJSONRenderer(JSONRenderer):
                     response_payload['field_errors'] = data
 
             elif isinstance(data, list):
-                # Top-level list errors
+                # Top-level list errors also from serializer
                 logger.info("Serializer error")
                 response_payload['message'] = "Validation failed."
                 response_payload['field_errors'] = data

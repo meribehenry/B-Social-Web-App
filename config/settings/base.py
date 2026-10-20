@@ -9,6 +9,7 @@ https://docs.djangoproject.com/en/6.1/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.1/ref/settings/
 """
+from datetime import timedelta
 from pathlib import Path
 from dotenv import load_dotenv
 import os
@@ -35,8 +36,10 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
-    'apps.authentication.apps.AuthenticationConfig',
     'apps.user.apps.UserConfig',
+    'apps.post.apps.PostConfig',
+    'apps.upload.apps.UploadConfig',
+    'apps.authentication.apps.AuthenticationConfig',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -47,7 +50,6 @@ INSTALLED_APPS = [
     'django_redis',
     'rest_framework_simplejwt.token_blacklist',
     'django_celery_beat'
-
 ]
 
 MIDDLEWARE = [
@@ -84,6 +86,15 @@ REST_FRAMEWORK = {
     "DEFAULT_FILTER_BACKENDS": [        
         "django_filters.rest_framework.DjangoFilterBackend",    
     ],
+}
+
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60000),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=30),
+    # "ROTATE_REFRESH_TOKENS": False,
+    # "BLACKLIST_AFTER_ROTATION": False
+
 }
 
 
@@ -191,6 +202,8 @@ USE_TZ = True
 
 AUTH_USER_MODEL = 'user.User'
 
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.1/howto/static-files/
@@ -223,5 +236,10 @@ CELERY_TASK_SOFT_TIME_LIMIT = 25 * 60
 CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 
 REDIS_URL = os.environ.get("REDIS_URL")
+
+CLOUDINARY_CLOUD_NAME=os.environ.get("CLOUDINARY_CLOUD_NAME")
+CLOUDINARY_API_KEY=os.environ.get("CLOUDINARY_API_KEY")
+CLOUDINARY_API_SECRET=os.environ.get("CLOUDINARY_API_SECRET")
+
 
 

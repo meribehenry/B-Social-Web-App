@@ -123,7 +123,7 @@ class BSocialAuthService():
         
         # Send email here
         send_otp_email.delay(email, {"otp":otp})
-        print(otp)
+        # print(otp)
 
         self.result = self.service_response_builder.result(
             message="An email containing OTP code has been sent. Verify your email to create an account", 
@@ -265,7 +265,7 @@ class BSocialAuthService():
         if user:
             otp = self.generate_or_update_otp(email, purpose)
             send_otp_email.delay(email, {"otp":otp})
-            print(otp)
+            # print(otp)
             logger.info("OTP Resent")
 
         self.result = self.service_response_builder.result(

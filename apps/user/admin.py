@@ -21,4 +21,4 @@ class UserAdmin(BaseUserAdmin):
         }),
     )
 
-admin.register(Profile)
+admin.site.register(Profile)

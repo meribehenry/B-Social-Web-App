@@ -298,3 +298,6 @@ class ProfileService():
         )
 
         return self.result, self.error
+
+    def get_profile_model(self):
+        return Profile

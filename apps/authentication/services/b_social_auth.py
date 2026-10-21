@@ -95,8 +95,8 @@ class BSocialAuthService():
             self.error = {
                 "message": "Account registered already. Verify your email to continue",
                 "error": "Conflict error",
-                "data": {"unverified_user": UserSerializer(user).data},
-                "status": status.HTTP_409_CONFLICT
+                "data": {"user": UserSerializer(user).data},
+                "status_code": status.HTTP_409_CONFLICT
             }
             logger.info("Registeration failed. User already registered only verification required")
 
@@ -244,7 +244,6 @@ class BSocialAuthService():
 
         user = self.user_service.get_user_object(identifier=email, retrival_method="email")
 
-
         if purpose == "REGISTRATION" and user and user.email_verified:
             self.error = self.service_response_builder.conflict_error(
                 message =  "Account already exists. Login to continue",
@@ -258,7 +257,6 @@ class BSocialAuthService():
             )
             logger.info("Resending OTP failed for PASSWORD_RESET. User don't have an active account")
             return self.result, self.error
-
 
         if user:
             otp = self.generate_or_update_otp(email, purpose)
@@ -291,7 +289,7 @@ class BSocialAuthService():
                 "message": "Account registered but needs verification. Verify your email to continue",
                 "error": "Unauthorized error",
                 "data": {"unverified_user": UserSerializer(data=user)},
-                "status": status.HTTP_401_UNAUTHORIZED
+                "status_code": status.HTTP_401_UNAUTHORIZED
             }
             logger.info("Login failed due to unverified account")
 

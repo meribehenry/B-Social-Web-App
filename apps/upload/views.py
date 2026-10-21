@@ -11,7 +11,6 @@ api_success_response_handler = APISuccessResponseHandler()
 
 class UploadMediaFileView(APIView):
     permission_classes = [IsAuthenticated]
-    print("Here")
 
     def post(self, request):
         result, error = upload_service.start_upload(request.data, request.user)

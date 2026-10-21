@@ -85,7 +85,7 @@ class UserService():
 
         with transaction.atomic():
             user = User.objects.create(**values)
-            Profile.objects.create(display_name=display_name, user=new_user)
+            Profile.objects.create(display_name=display_name, user=user)
 
             new_user = User.objects.select_related("profile").get(pk=user.id)
             logger.info("New user created successfully")

@@ -4,7 +4,11 @@ from django.utils import timezone
 from uuid6 import uuid7
 from django.contrib.auth.hashers import make_password
 from core.model.base_model import BaseModel
+from core.logger.logger_client import get_logger
 from django.conf import settings
+import secrets
+
+logger = get_logger(__name__)
 
 
 class UserManager(BaseUserManager):
@@ -62,6 +66,16 @@ class User(AbstractBaseUser, PermissionsMixin):
     REQUIRED_FIELDS = ['username']
 
     objects = UserManager()
+
+    def check_username(self, username:str) -> bool:
+        if not username:
+            raise ValueError("Username empty")
+        
+        user = User.objects.filter(username=username).first()
+        if not user:
+            logger.info(f"Username {username} created for {usename}")
+            return True
+        return False  
 
 
 class Profile(BaseModel):

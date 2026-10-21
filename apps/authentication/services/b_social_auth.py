@@ -62,18 +62,16 @@ class BSocialAuthService():
         logger.info(f"OTP successfully verified for {token_record.purpose}")
         return True
 
-
     def create_username(self, email:str) -> str:
         while True:
             name = email.split("@")[0][:13]
             random = secrets.token_hex(4)
             username = name + "_" + random
 
-            user = self.user_service.get_user_object(identifier=email, retrival_method="username")
+            user = self.user_service.get_user_object(identifier=username, retrival_method="username")
             if not user:
                 logger.info(f"Username {username} created for {email}")
                 return username    
-
 
     def register(self, data) -> tuple:
         logger.info("Registration starting....")

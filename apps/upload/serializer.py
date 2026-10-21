@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 
 class MediaInfoSerializer(serializers.Serializer):
-    resource_type = serializers.ChoiceField(choices=["video", "image"])
+    # resource_type = serializers.ChoiceField(choices=["video", "image"])
     extension = serializers.ChoiceField(choices=["png", "img", "mp4", "jpg", "gif", "jpeg", "avif", "mkv"])
     size = serializers.IntegerField()
     purpose = serializers.ChoiceField(choices=["post", "profile_pic", "profile_banner"])

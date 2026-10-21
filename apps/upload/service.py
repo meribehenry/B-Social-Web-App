@@ -30,6 +30,9 @@ class UploadService():
 
 
     def get_preset(self, file_info):
+        """
+        The upload preset
+        """
         logger.info(f"Getting upload preset for a media file...")
         upload_preset = ""
         if file_info["purpose"] == "post": upload_preset = "b_social_posts"
@@ -43,6 +46,9 @@ class UploadService():
     
 
     def get_asset_folder(self, file_info, user_id):
+        """
+        The folder to save the file
+        """
         logger.info(f"Getting assset for file....")
         folder = f"uploads/{user_id}"
         if file_info["purpose"] == "post": folder = folder + "/post"
@@ -54,6 +60,19 @@ class UploadService():
 
         logger.info(f"Asset folder for media file obtained")
         return folder + f"/{file_info["resource_type"]}"
+
+    def get_resource_type(self, file_info):
+        """
+        The resource_type of the file
+        """
+        image = {"png", "jpg", "img", "jpeg", "avif"}
+        video =  {"mp4", "mkv", "gif"}
+
+        if file_info["extension"] in image:
+            return "image"
+        
+        elif file_info["extension"] in video:
+            return "video"
 
 
     def validate_files_info(self, files_info: list, user_id: str, pass_other_validation=False, pass_len_validation=True) -> tuple:
@@ -78,10 +97,6 @@ class UploadService():
                 if file_info["purpose"] not in {"post", "profile_pic", "profile_banner"}:
                     return False, "Purpose must either be (post or profile_pic or profile_banner)"
 
-                if file_info["resource_type"] not in {"image", "video"}:
-                    if file_info["purpose"] not in {"post", "profile_pic", "profile_banner"}:
-                        return False, "Resource type must either be (image or video)"
-
             file_purpose.add(file_info["purpose"]) # type: ignore
 
 
@@ -105,6 +120,7 @@ class UploadService():
                         else:
                             profile_banner_exist = True # Set True if it doesn't exist in one of the files_info
 
+            file_info["resource_type"] = self.get_resource_type(file_info)
             file_info["upload_preset"] = self.get_preset(file_info)
             file_info["asset_folder"] = self.get_asset_folder(file_info, user_id)
             logger.info("Validation passed successfully")

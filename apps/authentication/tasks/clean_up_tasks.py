@@ -95,7 +95,7 @@ def delete_expired_access_token(self, *args, **kwargs):
 def delete_expired_refresh_token(self, *args, **kwargs):
     current_time = datetime.now(timezone.utc)
     try:
-        results = OutstandingToken.objects.filter(expires_at__lt=current_time ).delete()
+        results = OutstandingToken.objects.filter(expires_at__lt=current_time).delete()
         logger.info(
             f"Deleted {results[0]} expired  refresh token from the OutstandingToken table", 
             extra={

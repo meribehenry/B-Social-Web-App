@@ -67,16 +67,6 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     objects = UserManager()
 
-    def check_username(self, username:str) -> bool:
-        if not username:
-            raise ValueError("Username empty")
-        
-        user = User.objects.filter(username=username).first()
-        if not user:
-            logger.info(f"Username {username} created for {usename}")
-            return True
-        return False  
-
 
 class Profile(BaseModel):
     display_name = models.CharField(max_length=30)

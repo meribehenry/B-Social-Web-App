@@ -64,6 +64,20 @@ class UserService():
         print(user.password)
         user.save()
 
+    def check_username_free(self, username:str) -> bool:
+        if not username:
+            raise ValueError("Username empty")
+        
+        user = User.objects.filter(username=username).first()
+        if not user:
+            logger.info(f"Username {username} created for {username}")
+            return True
+        return False 
+
+    def save_username(self, username):
+        User.objects.filter(username=username).update(username=username)
+        return True
+
 
     def validate_create_user_values(self, values) -> KeyError | None:
 
@@ -124,7 +138,7 @@ class ProfileService():
         self.error = {}
 
 
-    def add_profile_medias(self, medias, batch, profile):
+    def _add_profile_medias(self, medias, batch, profile):
         logger.info("Adding profile media....")
 
         for media_info in medias:
@@ -176,6 +190,8 @@ class ProfileService():
         bio = serializer.data.get("bio", "")
         batch_id = serializer.data.get("batch_id", "")
         profession =  serializer.data.get("profession", "")
+        username = serializer.get("username", "")
+
 
         if display_name is None and batch_id is None and bio is None and profession is None:
             self.error = self.service_response_builder.bad_request_error(
@@ -184,11 +200,18 @@ class ProfileService():
             logger.info("Invaild request. No field updated, all is None")
             return self.result, self.error 
 
-        if display_name == "":
+        if display_name == "" or username == "":
             self.error = self.service_response_builder.bad_request_error(
                 message="Display name cannot be empty"
             )
             logger.info("Invaild request. No display name")
+            return self.result, self.error
+
+        if username and not self.user_service.check_username_free(username):
+            self.error = self.service_response_builder.bad_request_error(
+                message="Username already exists"
+            )
+            logger.info("Username already exists")
             return self.result, self.error
 
         if (not profile.bio and not bio) and (not profile.batch_id and not batch_id) \
@@ -210,6 +233,10 @@ class ProfileService():
             medias, batch = validate_result["medias"], validate_result["batch"] 
 
         with transaction.atomic():
+
+            if username:
+                self.user_service.save_username(username)
+                pass
 
             if display_name:
                 profile.display_name = display_name
@@ -258,7 +285,7 @@ class ProfileService():
                 logger.info("Removed all the old profile media if they existed")
 
                 if medias:
-                    self.add_profile_medias(medias, batch, profile)
+                    self._add_profile_medias(medias, batch, profile)
 
             profile.last_updated = datetime.now(timezone.utc)
             profile.save(update_fields=["last_updated"])

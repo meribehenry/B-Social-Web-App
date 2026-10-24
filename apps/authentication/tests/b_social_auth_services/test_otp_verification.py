@@ -5,22 +5,22 @@ from apps.user.service import ProfileService
 from django.contrib.auth import get_user_model
 from datetime import datetime, timezone, timedelta
 import pytest
-import uuid
 
 
 @pytest.mark.django_db
-def test_b_social_auth_service_verify_otp_for_registration_succeeds(mocker):
+def test_b_social_auth_service_verify_otp_for_registration_succeeds(mocker, unverified_user_data_to_create):
     mock_send_welcome_email = mocker.patch("apps.authentication.services.b_social_auth.send_welcome_email.delay")
 
     User = get_user_model()
     Profile = ProfileService().get_profile_model()
+
+    display_name = unverified_user_data_to_create.pop("display_name")
     user = User.objects.create(
-        email="mia@gmail.com",
-        password="password",
-        gender="female",
+        **unverified_user_data_to_create
     )
 
-    Profile.objects.create(display_name="Mia Bella", user=user)
+    Profile.objects.create(display_name=display_name, user=user)
+
     UserToken.objects.create(
             email=user.email, 
             purpose="REGISTRATION", 
@@ -48,18 +48,17 @@ def test_b_social_auth_service_verify_otp_for_registration_succeeds(mocker):
 
 
 @pytest.mark.django_db
-def test_b_social_auth_service_verify_otp_for_registration_fails_with_invalid_otp(mocker):
+def test_b_social_auth_service_verify_otp_for_registration_fails_due_to_invalid_otp(mocker, unverified_user_data_to_create):
     mock_send_welcome_email = mocker.patch("apps.authentication.services.b_social_auth.send_welcome_email.delay")
 
     User = get_user_model()
     Profile = ProfileService().get_profile_model()
+    display_name = unverified_user_data_to_create.pop("display_name")
     user = User.objects.create(
-        email="mia@gmail.com",
-        password="password",
-        gender="female",
+        **unverified_user_data_to_create
     )
 
-    Profile.objects.create(display_name="Mia Bella", user=user)
+    Profile.objects.create(display_name=display_name, user=user)
     UserToken.objects.create(
             email=user.email, 
             purpose="REGISTRATION", 
@@ -84,22 +83,24 @@ def test_b_social_auth_service_verify_otp_for_registration_fails_with_invalid_ot
     assert UserToken.objects.filter(email=user.email).exists()
     assert UserToken.objects.filter(email=user.email).first().attempts == 1
 
+
 @pytest.mark.django_db
-def test_b_social_auth_service_verify_otp_for_token_deleted_when_registration_fails_with_invalid_otp_on_3_trialp(mocker):
+def test_b_social_auth_service_verify_otp_fails_and_token_deleted_after_3_failed_attempts(mocker, unverified_user_data_to_create):
+    # This is for all purpose
     mock_send_welcome_email = mocker.patch("apps.authentication.services.b_social_auth.send_welcome_email.delay")
 
     User = get_user_model()
     Profile = ProfileService().get_profile_model()
-    user = User.objects.create(
-        email="mia@gmail.com",
-        password="password",
-        gender="female",
-    )
 
-    Profile.objects.create(display_name="Mia Bella", user=user)
+    display_name = unverified_user_data_to_create.pop("display_name")
+    user = User.objects.create(
+            **unverified_user_data_to_create
+        )
+    
+    Profile.objects.create(display_name=display_name, user=user)
     UserToken.objects.create(
             email=user.email, 
-            purpose="REGISTRATION", 
+            purpose="REGISTRATION",         
             otp_hash=BSocialAuthService().hash_value("100100"),
             expires_at= datetime.now(timezone.utc) + timedelta(minutes=10)
         )
@@ -133,18 +134,19 @@ def test_b_social_auth_service_verify_otp_for_token_deleted_when_registration_fa
 
 
 @pytest.mark.django_db
-def test_b_social_auth_service_verify_otp_for_registration_fails_with_wrong_purpose(mocker):
+def test_b_social_auth_service_verify_otp_for_registration_fails_due_to_wrong_purpose(mocker, unverified_user_data_to_create):
+    # This is for all purpose
     mock_send_welcome_email = mocker.patch("apps.authentication.services.b_social_auth.send_welcome_email.delay")
 
     User = get_user_model()
     Profile = ProfileService().get_profile_model()
+
+    display_name = unverified_user_data_to_create.pop("display_name")
     user = User.objects.create(
-        email="mia@gmail.com",
-        password="password",
-        gender="female",
+        **unverified_user_data_to_create
     )
 
-    Profile.objects.create(display_name="Mia Bella", user=user)
+    Profile.objects.create(display_name=display_name, user=user)
     UserToken.objects.create(
             email=user.email, 
             purpose="REGISTRATION", 
@@ -158,7 +160,7 @@ def test_b_social_auth_service_verify_otp_for_registration_fails_with_wrong_purp
         "purpose": "PASSWORD_RESET"
     }
 
-    result, error = BSocialAuthService().OTP_verification(data)
+    _, error = BSocialAuthService().OTP_verification(data)
 
     assert isinstance(error, dict) == True
     assert error != {}
@@ -170,20 +172,17 @@ def test_b_social_auth_service_verify_otp_for_registration_fails_with_wrong_purp
 
 
 @pytest.mark.django_db
-def test_b_social_auth_service_verify_otp_for_password_reset_succeeds():
+def test_b_social_auth_service_verify_otp_for_password_reset_succeeds(verified_user_data_to_create):
 
     User = get_user_model()
     Profile = ProfileService().get_profile_model()
+
+    display_name = verified_user_data_to_create.pop("display_name")
     user = User.objects.create(
-        email="mia@gmail.com",
-        password="password",
-        gender="female",
-        email_verified=True,
-        status="active",
-        is_active=True,
+        **verified_user_data_to_create
     )
 
-    Profile.objects.create(display_name="Mia Bella", user=user)
+    Profile.objects.create(display_name=display_name, user=user)
     UserToken.objects.create(
             email=user.email, 
             purpose="PASSWORD_RESET", 
@@ -197,9 +196,9 @@ def test_b_social_auth_service_verify_otp_for_password_reset_succeeds():
         "purpose": "PASSWORD_RESET"
     }
 
-    result, error = BSocialAuthService().OTP_verification(data)
+    result, _ = BSocialAuthService().OTP_verification(data)
 
-    assert isinstance(error, dict) == True
+    assert isinstance(result, dict) == True
     assert result != {}
 
     assert result["status_code"] == status.HTTP_200_OK

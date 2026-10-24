@@ -1,8 +1,7 @@
 from collections.abc import Mapping
-
 from core.response import ServiceResponseBuilder
 from datetime import datetime, timezone
-from time import time, sleep
+from time import time
 import cloudinary.exceptions
 from django.db import transaction
 from rest_framework import status

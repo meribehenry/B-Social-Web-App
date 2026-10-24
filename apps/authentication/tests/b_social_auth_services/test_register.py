@@ -66,20 +66,17 @@ def test_b_social_auth_service_register_fails_if_user_immediately_re_registers_w
 
 
 @pytest.mark.django_db
-def test_b_social_auth_service_register_fails_if_email_already_exists(mocker):
+def test_b_social_auth_service_register_fails_if_email_already_exists(mocker, verified_user_data_to_create):
     mock_send_otp_email = mocker.patch("apps.authentication.services.b_social_auth.send_otp_email.delay")
 
     User = get_user_model()
     Profile = ProfileService().get_profile_model()
+
+    display_name = verified_user_data_to_create.pop("display_name")
     user = User.objects.create(
-        email="mia@gmail.com",
-        password="password",
-        gender="female",
-        email_verified=True,
-        status="active",
-        is_active=True,
+        **verified_user_data_to_create
     )
-    Profile.objects.create(display_name="Mia Bella", user=user)
+    Profile.objects.create(display_name=display_name, user=user)
 
     data = {
             "display_name": "Mia Bella Sis",

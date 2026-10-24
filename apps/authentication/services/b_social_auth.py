@@ -8,7 +8,8 @@ from .refresh_token.service import revoke_refresh_token
 from .access_token.service import revoke_access_token_object
 from django.contrib.auth import get_user_model
 from apps.user.serializer import UserSerializer
-from ..serializers import LoginSerializer, PasswordResetRequestSerializer, PasswordResetSerializer, RegistrationSerializer, ResendOTPSerializer, VerifyOTPSerializer
+from ..serializers import (LoginSerializer, PasswordResetRequestSerializer, PasswordResetSerializer, 
+                            RegistrationSerializer, ResendOTPSerializer, VerifyOTPSerializer)
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework import status
 from core.logger.logger_client import get_logger
@@ -121,7 +122,6 @@ class BSocialAuthService():
         
         # Send email here
         send_otp_email.delay(email, {"otp":otp})
-        # print(otp)
 
         self.result = self.service_response_builder.result(
             message="An email containing OTP code has been sent. Verify your email to create an account", 
@@ -261,7 +261,6 @@ class BSocialAuthService():
         if user:
             otp = self.generate_or_update_otp(email, purpose)
             send_otp_email.delay(email, {"otp":otp})
-            # print(otp)
             logger.info("OTP Resent")
 
         self.result = self.service_response_builder.result(
@@ -351,7 +350,6 @@ class BSocialAuthService():
         if user and user.email_verified:
             otp = self.generate_or_update_otp(email, purpose)
             send_otp_email.delay(email, {"otp":otp})
-            print(otp)
 
         self.result = self.service_response_builder.result(
             message =  "An email containing the OTP code has been sent",
@@ -397,7 +395,7 @@ class BSocialAuthService():
             logger.info("Password successfully resetted")
 
             self.result = self.service_response_builder.result(
-                message =  "Password reset successfully. You can now login",
+                message="Password reset successfully. You can now login",
                 status_code=status.HTTP_200_OK
             )
 

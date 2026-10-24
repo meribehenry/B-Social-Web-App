@@ -8,25 +8,22 @@ import pytest
 
 
 @pytest.mark.django_db
-def test_b_social_auth_service_login_succeeds():
+def test_b_social_auth_service_login_succeeds(verified_user_data_to_create):
     User = get_user_model()
 
     User = get_user_model()
     Profile = ProfileService().get_profile_model()
+
+    display_name = verified_user_data_to_create.pop("display_name")
     user = User.objects.create(
-        email="mia@gmail.com",
-        password=make_password("password123$"),
-        gender="female",
-        email_verified=True,
-        status="active",
-        is_active=True,
+        **verified_user_data_to_create
     )
 
-    Profile.objects.create(display_name="Mia Bella", user=user)
+    Profile.objects.create(display_name=display_name, user=user)
 
     data = {
         "email": "mia@gmail.com",
-        "password": "password123$",
+        "password": "12345678$Mia",
     }
     result, _ = BSocialAuthService().login(data)
     
@@ -42,21 +39,18 @@ def test_b_social_auth_service_login_succeeds():
 
 
 @pytest.mark.django_db
-def test_b_social_auth_service_login_fails_if_email_does_not_exists_or_password_incorrect():
+def test_b_social_auth_service_login_fails_if_email_does_not_exists_or_password_incorrect(verified_user_data_to_create):
     User = get_user_model()
 
     User = get_user_model()
     Profile = ProfileService().get_profile_model()
+
+    display_name = verified_user_data_to_create.pop("display_name")
     user = User.objects.create(
-        email="mia@gmail.com",
-        password=make_password("password123$"),
-        gender="female",
-        email_verified=True,
-        status="active",
-        is_active=True,
+        **verified_user_data_to_create
     )
 
-    Profile.objects.create(display_name="Mia Bella", user=user)
+    Profile.objects.create(display_name=display_name, user=user)
 
     data = {
         "email": "mia3@gmail.com",

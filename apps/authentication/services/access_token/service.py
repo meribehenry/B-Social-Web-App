@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
-from django.core.cache import cache
+from core.clients.redis_client import get_app_redis_client
+# from django.core.cache import cache
 from django.db import transaction
 from rest_framework_simplejwt.tokens import AccessToken
 from ...models import RevokedAccessToken
@@ -21,6 +22,8 @@ def revoke_access_token_object(token:AccessToken):
     """
 
     logger.info("Access token revocation starting....")
+
+    app_cache = get_app_redis_client()
 
     jti = token["jti"]
     user_id = token["user_id"]
@@ -54,10 +57,10 @@ def revoke_access_token_object(token:AccessToken):
     )
 
     # Redis is the fast lookup layer.
-    cache.set(
+    app_cache.set(
         get_access_revocation_key(jti),
-        True,
-        timeout=remaining_seconds, # TTL
+        1,
+        ex=remaining_seconds, # TTL
     )
 
     logger.info("Revoked Refresh token jti added to redis for fast look up")
@@ -74,10 +77,12 @@ def is_access_token_revoked(jti: str) -> bool:
     If Redis fails, PostgreSQL is consulted.
     """
 
+    app_cache = get_app_redis_client()
+
     key = get_access_revocation_key(jti)
 
     try:
-        cached_value = cache.get(key)  # Getting the value of the access token jti from redis. True if it exist None if not
+        cached_value = app_cache.get(key)  # Getting the value of the access token jti from redis. True if it exist None if not
         logger.info("Checking redis to see if refresh jti is revoked")
 
     except Exception:
@@ -89,7 +94,7 @@ def is_access_token_revoked(jti: str) -> bool:
     
 
     # Redis explicitly says revoked.
-    if cached_value is True: 
+    if cached_value is not None: 
         return True
 
     # Cache miss.
@@ -115,10 +120,10 @@ def is_access_token_revoked(jti: str) -> bool:
         )
 
         try:
-            cache.set(
+            app_cache.set(
                 key,
-                True,
-                timeout=remaining_seconds,
+                1,
+                ex=remaining_seconds,
             )
             logger.info("Access jti added to redis")
             

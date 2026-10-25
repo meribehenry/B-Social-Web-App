@@ -10,8 +10,8 @@ import pytest
 
 
 @pytest.mark.django_db
-def test_b_social_auth_service_logout_succeeds(verified_user_data_to_create):
-    User = get_user_model()
+def test_b_social_auth_service_logout_succeeds(verified_user_data_to_create, mock_app_cache_for_jwt_tokens):
+    jwt_app_cache = mock_app_cache_for_jwt_tokens
 
     User = get_user_model()
     Profile = ProfileService().get_profile_model()

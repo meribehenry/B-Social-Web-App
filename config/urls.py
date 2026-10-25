@@ -18,12 +18,14 @@ from django.contrib import admin
 from django.conf import settings
 from django.urls import include, path
 
+
+
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('auth/', include("apps.authentication.urls")),
-    path('uploads/', include("apps.upload.urls")),
-    path('posts/', include("apps.post.urls")),
-    path('users/', include("apps.user.urls")),
+    path(settings.BASE_URL + 'auth/', include("apps.authentication.urls")),
+    path(settings.BASE_URL + 'uploads/', include("apps.upload.urls")),
+    path(settings.BASE_URL + 'posts/', include("apps.post.urls")),
+    path(settings.BASE_URL + 'users/', include("apps.user.urls")),
 ]
 
 

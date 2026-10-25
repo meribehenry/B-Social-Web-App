@@ -8,6 +8,7 @@ click==8.5.0
 click-didyoumean==0.3.1
 click-plugins==1.1.1.2
 click-repl==0.4.0
+cloudinary==1.46.2
 colorama==0.4.6
 cron-descriptor==1.4.5
 Django==6.0.8
@@ -18,9 +19,11 @@ django-redis==7.0.0
 django-timezone-field==7.2.2
 djangorestframework==3.18.1
 djangorestframework_simplejwt==5.5.1
+fakeredis==2.40.0
 idna==3.20
 iniconfig==2.3.0
 kombu==5.6.2
+lupa==2.8
 packaging==26.3
 pika==1.4.4
 pluggy==1.6.0
@@ -29,6 +32,7 @@ Pygments==2.21.0
 PyJWT==2.14.0
 pytest==9.1.1
 pytest-django==4.14.0
+pytest-mock==3.17.0
 python-crontab==3.4.0
 python-dateutil==2.9.0.post0
 python-dotenv==1.2.3
@@ -36,6 +40,7 @@ python-json-logger==4.2.0
 redis==4.6.0
 requests==2.34.2
 six==1.17.0
+sortedcontainers==2.4.0
 sqlparse==0.6.0
 typing_extensions==4.16.0
 tzdata==2026.4

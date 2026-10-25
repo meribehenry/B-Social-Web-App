@@ -1,6 +1,6 @@
 from django.core.exceptions import ImproperlyConfigured
 from core.logger.logger_client import get_logger
-from ..clients.redis_client import get_redis_client
+from ..clients.redis_client import get_rate_limit_redis_client
 from redis.exceptions import RedisError
 from .lua_script import TOKEN_BUCKET_LUA
 import time
@@ -40,10 +40,9 @@ def check_token_bucket(
 
 
     try:
-        redis_client = get_redis_client()
-
+        redis_client = get_rate_limit_redis_client()
+        
         now = time.time()
-        from .lua_script import TOKEN_BUCKET_LUA
         result = redis_client.eval(
             TOKEN_BUCKET_LUA,
             1,

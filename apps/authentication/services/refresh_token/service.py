@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
-from django.core.cache import cache
+from core.clients.redis_client import get_app_redis_client
+# from django.core.cache import cache
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
 from core.logger.logger_client import get_logger
@@ -14,6 +15,8 @@ def get_refresh_revocation_key(jti: str) -> str:
 
 def revoke_refresh_token(token_string: str):
     logger.info(" Refresh token revocation starting....")
+
+    app_cache = get_app_redis_client()
 
     token = RefreshToken(token_string)  # Validating the refresh token
 
@@ -39,10 +42,10 @@ def revoke_refresh_token(token_string: str):
     )
 
     # Adding the refresh token jti to redis for fast lookup.
-    cache.set(
+    app_cache.set(
         get_refresh_revocation_key(jti),
-        True,
-        timeout=remaining_seconds, # Time to live 
+        1,
+        ex=remaining_seconds, # Time to live 
     )
     logger.info("Revoked Refresh token jti added to redis for fast look up")
 
@@ -50,10 +53,12 @@ def revoke_refresh_token(token_string: str):
 def is_refresh_token_revoked(jti: str) -> bool:
     logger.info("Checking if refresh token is revoked")
 
+    app_cache = get_app_redis_client()
+
     key = get_refresh_revocation_key(jti)
 
     try:
-        cached_value = cache.get(key)   # Getting the value of the refresh token jti from redis. True if it exist None if not
+        cached_value = app_cache.get(key)   # Getting the value of the refresh token jti from redis. True if it exist None if not
         logger.info("Checking redis to see if refresh jti is revoked")
 
     except Exception:
@@ -63,7 +68,7 @@ def is_refresh_token_revoked(jti: str) -> bool:
             token__jti=jti
         ).exists()
 
-    if cached_value is True:  # Evaluates what redis gave us
+    if cached_value is not None:  # Evaluates what redis gave us
         return True
 
     # Redis miss → authoritative DB check.
@@ -88,10 +93,10 @@ def is_refresh_token_revoked(jti: str) -> bool:
                 1,
             )
 
-            cache.set(
+            app_cache.set(
                 key,
-                True,
-                timeout=remaining_seconds,
+                1,
+                ex=remaining_seconds,
             )
             logger.info("Refresh jti added to redis")
 

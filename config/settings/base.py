@@ -204,6 +204,8 @@ AUTH_USER_MODEL = 'user.User'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+BASE_URL = "api/v1/"
+
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.1/howto/static-files/
@@ -236,6 +238,10 @@ CELERY_TASK_SOFT_TIME_LIMIT = 25 * 60
 CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 
 REDIS_URL = os.environ.get("REDIS_URL")
+REDIS_ANALYTICS_URL = os.environ.get("REDIS_URL")
+REDIS_APP_URL = os.environ.get("REDIS_URL")
+REDIS_RATE_LIMIT_URL = os.environ.get("REDIS_URL")
+
 
 CLOUDINARY_CLOUD_NAME=os.environ.get("CLOUDINARY_CLOUD_NAME")
 CLOUDINARY_API_KEY=os.environ.get("CLOUDINARY_API_KEY")

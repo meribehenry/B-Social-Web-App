@@ -4,10 +4,9 @@ from rest_framework import status
 
 
 @pytest.mark.django_db
-def test_registration_view_succeeds(mocker, api_client, mock_rate_limit_redis, mock_app_cache_for_jwt_tokens):
+def test_registration_view_succeeds(mocker, api_client, mock_rate_limit_redis):
 
     rate_redis = mock_rate_limit_redis
-    jwt_app_cache = mock_app_cache_for_jwt_tokens
     mock_send_otp_email = mocker.patch("apps.authentication.services.b_social_auth.send_otp_email.delay")
 
     url = reverse("register")

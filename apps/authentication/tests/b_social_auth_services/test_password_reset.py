@@ -9,18 +9,11 @@ import uuid
 
 
 @pytest.mark.django_db
-def test_b_social_auth_service_password_reset_succeeds(verified_user_data_to_create):
+def test_b_social_auth_service_password_reset_succeeds(create_verified_user):
     reset_token = str(uuid.uuid4())
 
-    User = get_user_model()
-    Profile = ProfileService().get_profile_model()
+    user = create_verified_user
 
-    display_name = verified_user_data_to_create.pop("display_name")
-    user = User.objects.create(
-        **verified_user_data_to_create
-    )
-    
-    Profile.objects.create(display_name=display_name, user=user)
     UserToken.objects.create(
             email=user.email, 
             purpose="PASSWORD_RESET", 
@@ -43,17 +36,11 @@ def test_b_social_auth_service_password_reset_succeeds(verified_user_data_to_cre
 
 
 @pytest.mark.django_db
-def test_b_social_auth_service_password_reset_fails_due_to_expired_token(verified_user_data_to_create):
+def test_b_social_auth_service_password_reset_fails_due_to_expired_token(create_verified_user):
     reset_token = str(uuid.uuid4())
 
-    User = get_user_model()
-    Profile = ProfileService().get_profile_model()
+    user = create_verified_user
 
-    display_name = verified_user_data_to_create.pop("display_name")
-    user = User.objects.create(
-        **verified_user_data_to_create
-    )
-    Profile.objects.create(display_name=display_name, user=user)
     UserToken.objects.create(
             email=user.email, 
             purpose="PASSWORD_RESET", 
@@ -76,17 +63,11 @@ def test_b_social_auth_service_password_reset_fails_due_to_expired_token(verifie
 
 
 @pytest.mark.django_db
-def test_b_social_auth_service_password_reset_fails_due_to_invalid_token(verified_user_data_to_create):
+def test_b_social_auth_service_password_reset_fails_due_to_invalid_token(create_verified_user):
     reset_token = str(uuid.uuid4())
 
-    User = get_user_model()
-    Profile = ProfileService().get_profile_model()
-
-    display_name = verified_user_data_to_create.pop("display_name")
-    user = User.objects.create(
-        **verified_user_data_to_create
-    )
-    Profile.objects.create(display_name=display_name, user=user)
+    user = create_verified_user
+    
     UserToken.objects.create(
             email=user.email, 
             purpose="PASSWORD_RESET", 

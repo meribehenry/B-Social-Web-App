@@ -7,19 +7,10 @@ import pytest
 
 
 @pytest.mark.django_db
-def test_b_social_auth_service_resend_otp_for_registration_succeeds(mocker, unverified_user_data_to_create):
+def test_b_social_auth_service_resend_otp_for_registration_succeeds(mocker, create_unverified_user):
     mock_send_otp_email = mocker.patch("apps.authentication.services.b_social_auth.send_otp_email.delay")
 
-    User = get_user_model()
-    Profile = ProfileService().get_profile_model()
-
-    display_name = unverified_user_data_to_create.pop("display_name")
-    user = User.objects.create(
-        email="mia@gmail.com",
-        password="password",
-        gender="female",
-    )
-    Profile.objects.create(display_name=display_name, user=user)
+    user = create_unverified_user
 
     data = {
             "email": "mia@gmail.com",
@@ -35,19 +26,12 @@ def test_b_social_auth_service_resend_otp_for_registration_succeeds(mocker, unve
 
 
 @pytest.mark.django_db
-def test_b_social_auth_service_resend_otp_for_fails_email_not_sent_due_to_email_not_found(mocker, unverified_user_data_to_create):
+def test_b_social_auth_service_resend_otp_for_fails_email_not_sent_due_to_email_not_found(mocker, create_unverified_user):
 
     # Test for all purpose
     mock_send_otp_email = mocker.patch("apps.authentication.services.b_social_auth.send_otp_email.delay")
 
-    User = get_user_model()
-    Profile = ProfileService().get_profile_model()
-
-    display_name = unverified_user_data_to_create.pop("display_name")
-    user = User.objects.create(
-        **unverified_user_data_to_create
-    )
-    Profile.objects.create(display_name=display_name, user=user)
+    user = create_unverified_user
 
     data = {
             "email": "mia5@gmail.com",
@@ -63,18 +47,11 @@ def test_b_social_auth_service_resend_otp_for_fails_email_not_sent_due_to_email_
 
 
 @pytest.mark.django_db
-def test_b_social_auth_service_resend_otp_for_password_reset_succeeds(mocker, verified_user_data_to_create):
+def test_b_social_auth_service_resend_otp_for_password_reset_succeeds(mocker, create_verified_user):
     mock_send_otp_email = mocker.patch("apps.authentication.services.b_social_auth.send_otp_email.delay")
 
-    User = get_user_model()
-    Profile = ProfileService().get_profile_model()
-
-    display_name = verified_user_data_to_create.pop("display_name")
-    user = User.objects.create(
-        **verified_user_data_to_create
-    )
-    Profile.objects.create(display_name=display_name, user=user)
-
+    user = create_verified_user
+    
     data = {
             "email": "mia@gmail.com",
             "purpose": "PASSWORD_RESET"

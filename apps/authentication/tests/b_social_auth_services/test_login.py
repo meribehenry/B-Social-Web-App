@@ -1,6 +1,5 @@
 from pygments.unistring import No
 from rest_framework import status
-from django.contrib.auth.hashers import make_password
 from apps.authentication.services.b_social_auth import BSocialAuthService
 from apps.user.service import ProfileService
 from django.contrib.auth import get_user_model
@@ -8,18 +7,9 @@ import pytest
 
 
 @pytest.mark.django_db
-def test_b_social_auth_service_login_succeeds(verified_user_data_to_create):
-    User = get_user_model()
+def test_b_social_auth_service_login_succeeds(create_verified_user):
 
-    User = get_user_model()
-    Profile = ProfileService().get_profile_model()
-
-    display_name = verified_user_data_to_create.pop("display_name")
-    user = User.objects.create(
-        **verified_user_data_to_create
-    )
-
-    Profile.objects.create(display_name=display_name, user=user)
+    user = create_verified_user
 
     data = {
         "email": "mia@gmail.com",
@@ -39,18 +29,7 @@ def test_b_social_auth_service_login_succeeds(verified_user_data_to_create):
 
 
 @pytest.mark.django_db
-def test_b_social_auth_service_login_fails_if_email_does_not_exists_or_password_incorrect(verified_user_data_to_create):
-    User = get_user_model()
-
-    User = get_user_model()
-    Profile = ProfileService().get_profile_model()
-
-    display_name = verified_user_data_to_create.pop("display_name")
-    user = User.objects.create(
-        **verified_user_data_to_create
-    )
-
-    Profile.objects.create(display_name=display_name, user=user)
+def test_b_social_auth_service_login_fails_if_email_does_not_exists_or_password_incorrect():
 
     data = {
         "email": "mia3@gmail.com",

@@ -8,18 +8,10 @@ import pytest
 
 
 @pytest.mark.django_db
-def test_b_social_auth_service_verify_otp_for_registration_succeeds(mocker, unverified_user_data_to_create):
+def test_b_social_auth_service_verify_otp_for_registration_succeeds(mocker, create_unverified_user):
     mock_send_welcome_email = mocker.patch("apps.authentication.services.b_social_auth.send_welcome_email.delay")
 
-    User = get_user_model()
-    Profile = ProfileService().get_profile_model()
-
-    display_name = unverified_user_data_to_create.pop("display_name")
-    user = User.objects.create(
-        **unverified_user_data_to_create
-    )
-
-    Profile.objects.create(display_name=display_name, user=user)
+    user = create_unverified_user
 
     UserToken.objects.create(
             email=user.email, 
@@ -48,17 +40,11 @@ def test_b_social_auth_service_verify_otp_for_registration_succeeds(mocker, unve
 
 
 @pytest.mark.django_db
-def test_b_social_auth_service_verify_otp_for_registration_fails_due_to_invalid_otp(mocker, unverified_user_data_to_create):
+def test_b_social_auth_service_verify_otp_for_registration_fails_due_to_invalid_otp(mocker, create_unverified_user):
     mock_send_welcome_email = mocker.patch("apps.authentication.services.b_social_auth.send_welcome_email.delay")
 
-    User = get_user_model()
-    Profile = ProfileService().get_profile_model()
-    display_name = unverified_user_data_to_create.pop("display_name")
-    user = User.objects.create(
-        **unverified_user_data_to_create
-    )
+    user = create_unverified_user
 
-    Profile.objects.create(display_name=display_name, user=user)
     UserToken.objects.create(
             email=user.email, 
             purpose="REGISTRATION", 
@@ -85,19 +71,12 @@ def test_b_social_auth_service_verify_otp_for_registration_fails_due_to_invalid_
 
 
 @pytest.mark.django_db
-def test_b_social_auth_service_verify_otp_fails_and_token_deleted_after_3_failed_attempts(mocker, unverified_user_data_to_create):
+def test_b_social_auth_service_verify_otp_fails_and_token_deleted_after_3_failed_attempts(mocker, create_unverified_user):
     # This is for all purpose
     mock_send_welcome_email = mocker.patch("apps.authentication.services.b_social_auth.send_welcome_email.delay")
 
-    User = get_user_model()
-    Profile = ProfileService().get_profile_model()
+    user = create_unverified_user
 
-    display_name = unverified_user_data_to_create.pop("display_name")
-    user = User.objects.create(
-            **unverified_user_data_to_create
-        )
-    
-    Profile.objects.create(display_name=display_name, user=user)
     UserToken.objects.create(
             email=user.email, 
             purpose="REGISTRATION",         
@@ -134,19 +113,12 @@ def test_b_social_auth_service_verify_otp_fails_and_token_deleted_after_3_failed
 
 
 @pytest.mark.django_db
-def test_b_social_auth_service_verify_otp_for_registration_fails_due_to_wrong_purpose(mocker, unverified_user_data_to_create):
+def test_b_social_auth_service_verify_otp_for_registration_fails_due_to_wrong_purpose(mocker, create_unverified_user):
     # This is for all purpose
     mock_send_welcome_email = mocker.patch("apps.authentication.services.b_social_auth.send_welcome_email.delay")
 
-    User = get_user_model()
-    Profile = ProfileService().get_profile_model()
+    user = create_unverified_user
 
-    display_name = unverified_user_data_to_create.pop("display_name")
-    user = User.objects.create(
-        **unverified_user_data_to_create
-    )
-
-    Profile.objects.create(display_name=display_name, user=user)
     UserToken.objects.create(
             email=user.email, 
             purpose="REGISTRATION", 
@@ -172,17 +144,10 @@ def test_b_social_auth_service_verify_otp_for_registration_fails_due_to_wrong_pu
 
 
 @pytest.mark.django_db
-def test_b_social_auth_service_verify_otp_for_password_reset_succeeds(verified_user_data_to_create):
+def test_b_social_auth_service_verify_otp_for_password_reset_succeeds(create_verified_user):
 
-    User = get_user_model()
-    Profile = ProfileService().get_profile_model()
-
-    display_name = verified_user_data_to_create.pop("display_name")
-    user = User.objects.create(
-        **verified_user_data_to_create
-    )
-
-    Profile.objects.create(display_name=display_name, user=user)
+    user = create_verified_user
+    
     UserToken.objects.create(
             email=user.email, 
             purpose="PASSWORD_RESET", 

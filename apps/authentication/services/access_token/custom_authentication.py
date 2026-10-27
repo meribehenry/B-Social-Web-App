@@ -1,5 +1,6 @@
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework_simplejwt.tokens import AccessToken
 from ...services.access_token.service import is_access_token_revoked
 from core.logger.logger_client import get_logger
 
@@ -15,9 +16,7 @@ class RevocableJWTAuthentication(JWTAuthentication):
         # Let SimpleJWT perform all normal JWT validation first.
         validated_token = super().get_validated_token(raw_token)
 
-        jti = validated_token["jti"]
-
-        if is_access_token_revoked(jti):
+        if is_access_token_revoked(validated_token):
             logger.info("Access token revoked")
             raise AuthenticationFailed("This access token has been revoked.")
             

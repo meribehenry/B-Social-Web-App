@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from rest_framework_simplejwt.exceptions import TokenError
 from core.clients.redis_client import get_app_redis_client
 # from django.core.cache import cache
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -18,7 +19,10 @@ def revoke_refresh_token(token_string: str):
 
     app_cache = get_app_redis_client()
 
-    token = RefreshToken(token_string)  # Validating the refresh token
+    try:
+        token = RefreshToken(token_string)  # Validating the refresh token
+    except TokenError:
+        return False
 
     jti = token["jti"]
 
@@ -48,6 +52,7 @@ def revoke_refresh_token(token_string: str):
         ex=remaining_seconds, # Time to live 
     )
     logger.info("Revoked Refresh token jti added to redis for fast look up")
+    return True
 
 
 def is_refresh_token_revoked(jti: str) -> bool:
@@ -68,40 +73,52 @@ def is_refresh_token_revoked(jti: str) -> bool:
             token__jti=jti
         ).exists()
 
-    if cached_value is not None:  # Evaluates what redis gave us
+    if cached_value == "1":  # Evaluates what redis gave us
         return True
 
     # Redis miss → authoritative DB check.
     logger.info("Checking DB to see if refresh jti is revoked. Because redis does not have it")
+
     revoked = BlacklistedToken.objects.filter(
         token__jti=jti
     ).exists()
 
-    if revoked:
-        # Adding the refresh jti to redis if it found in the DB
+    outstanding = OutstandingToken.objects.get(jti=jti)  # Getting more information on the token
+
+    # Calculating refresh token remaining seconds
+    remaining_seconds = max(
+        int(
+            (
+                outstanding.expires_at - datetime.now(timezone.utc)
+            ).total_seconds()
+        ),
+        1,
+    )
+
+    try:
         logger.info("Adding the refresh jti to redis")
-
-        try:
-            outstanding = OutstandingToken.objects.get(jti=jti)  # Getting more information on the token
-
-            remaining_seconds = max(
-                int(
-                    (
-                        outstanding.expires_at - datetime.now(timezone.utc)
-                    ).total_seconds()
-                ),
-                1,
-            )
-
+        if revoked:
+            # Adding the refresh jti to redis as revoked if it found in the DB
             app_cache.set(
                 key,
                 1,
                 ex=remaining_seconds,
             )
-            logger.info("Refresh jti added to redis")
+            logger.info("Revoked refresh jti added to redis")
 
-        except Exception:
-            # DB already contains the authoritative state.
-            pass
+        else:
+            # Adding vaild refresh jti to redis for easier look up next time
+            app_cache.set(
+                key,
+                0,
+                ex=remaining_seconds,
+            )
+            logger.info("Valid refresh jti added to redis for easier look up next time")
+
+
+    except Exception:
+        # DB already contains the authoritative state.
+        logger.info("Error refresh jti not added to redis. Perphaps redis is down")
+        pass
 
     return revoked

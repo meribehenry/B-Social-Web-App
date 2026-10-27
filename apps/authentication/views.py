@@ -2,6 +2,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
+from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.views import TokenRefreshView
 from .serializers import BSocialTokenRefreshSerializer
 from .services.b_social_auth import BSocialAuthService
@@ -177,7 +178,6 @@ class BSocialTokenRefreshView(TokenRefreshView):
     serializer_class = BSocialTokenRefreshSerializer
 
     def post(self, request, *args, **kwargs):
-        b_social_auth_service = BSocialAuthService()
         logger.info("Token Refresh starting....")
 
         refresh_token = request.COOKIES.get("refresh_token")
@@ -186,9 +186,13 @@ class BSocialTokenRefreshView(TokenRefreshView):
             logger.info("No refresh token found")
             return Response({"detail": "Refresh token not found."}, status=status.HTTP_401_UNAUTHORIZED)
 
-        serializer = self.get_serializer(data={"refresh": refresh_token})
+        try:
+            serializer = self.get_serializer(data={"refresh": refresh_token})
+            serializer.is_valid(raise_exception=True)
 
-        serializer.is_valid(raise_exception=True)
+        except TokenError:
+            return api_error_response_handler.error(message="Invalid or expired refresh token", status_code=status.HTTP_400_BAD_REQUEST)
+
         data = {"access_token": serializer.validated_data.pop("access")}
         logger.info("Access token created")
         return Response(data, status=status.HTTP_200_OK)
@@ -209,10 +213,9 @@ class LogoutView(APIView):
         result, error = b_social_auth_service.logout(access_token, refresh_token)
 
         if error:
-            response = Response("An error occured", status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-            return response
+            return api_error_response_handler.error(message=error["message"], status_code=error["status_code"])
               
-        response = Response(result, status=status.HTTP_200_OK)
+        response = api_success_response_handler.success(message=result["message"], status_code=result["status_code"])
         response.delete_cookie("refresh_token")
 
         return response

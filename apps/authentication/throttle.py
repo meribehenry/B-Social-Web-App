@@ -43,7 +43,7 @@ class PasswordResetRequestTokenBucketThrottle(GlobalTokenBucketThrottle):
 
 class PasswordResetTokenBucketThrottle(GlobalTokenBucketThrottle):
     capacity = 10
-    refill_rate = 1/60
+    refill_rate = 1/3600
     redis_unavailable_value = False
     bucket_name_suffix = 'password-reset'
     

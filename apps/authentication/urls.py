@@ -5,7 +5,7 @@ from . import views as auth_views
 urlpatterns = [
     path("register/", auth_views.RegristrationView.as_view(), name="register"),
     path("login/", auth_views.LoginView.as_view(), name="login"),
-    path("verify-otp/", auth_views.VerifyOTPView.as_view(), name="verify-otp"),
+    path("verify-otp/", auth_views.VerifyOTPView.as_view(), name="otp-verification"),
     path("password-reset-request/", auth_views.PasswordResetRequestView.as_view(), name="password-reset-request"),
     path("password-reset/", auth_views.PasswordResetView.as_view(), name="password-reset"),
     path("resend-otp/", auth_views.ResendOTPView.as_view(), name="resend-otp"),

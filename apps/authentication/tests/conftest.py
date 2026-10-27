@@ -56,3 +56,21 @@ def create_unverified_user(unverified_user_data_to_create):
     Profile.objects.create(display_name=display_name, user=user)
 
     return user
+
+@pytest.fixture()
+def create_unverified_user_2(unverified_user_data_to_create):
+    User = get_user_model()
+    Profile = ProfileService().get_profile_model()
+    data =  {
+            "display_name": "Meribe Henry",
+            "email": "marsboy409@gmail@gmail.com",
+            "password": make_password("12345678$Hen"),
+            "gender": "male"
+        }
+    display_name = data.pop("display_name")
+    user = User.objects.create(
+        **data
+    )
+    Profile.objects.create(display_name=display_name, user=user)
+
+    return user

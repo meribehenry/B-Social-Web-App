@@ -1,8 +1,8 @@
 from datetime import datetime, timezone
+from django.db.models import Q
 from core.clients.redis_client import get_app_redis_client
-# from django.core.cache import cache
 from django.db import transaction
-from rest_framework_simplejwt.tokens import AccessToken
+from rest_framework_simplejwt.tokens import AccessToken, Token
 from ...models import RevokedAccessToken
 from core.logger.logger_client import get_logger
 
@@ -66,7 +66,7 @@ def revoke_access_token_object(token:AccessToken):
     logger.info("Revoked Refresh token jti added to redis for fast look up")
 
 
-def is_access_token_revoked(jti: str) -> bool:
+def is_access_token_revoked(access_token: Token) -> bool:
     """
     Redis-first access-token revocation check.
 
@@ -76,6 +76,7 @@ def is_access_token_revoked(jti: str) -> bool:
 
     If Redis fails, PostgreSQL is consulted.
     """
+    jti = access_token["jti"]
 
     app_cache = get_app_redis_client()
 
@@ -94,41 +95,54 @@ def is_access_token_revoked(jti: str) -> bool:
     
 
     # Redis explicitly says revoked.
-    if cached_value is not None: 
+    if cached_value == "1": 
         return True
 
     # Cache miss.
     logger.info("Checking DB to see if access jti is revoked. Because redis does not have it")
+
     revoked = RevokedAccessToken.objects.filter(
         jti=jti
     ).exists()
 
-    # If DB says revoked, repair Redis.
-    if revoked:
-        # Adding the access jti to redis if it found in the DB
-        logger.info("Adding the access jti to redis")
+    token = RevokedAccessToken.objects.filter(jti=jti).first() # Getting more information on the token
 
-        token = RevokedAccessToken.objects.get(jti=jti)     # Getting more information on the token
-
-        remaining_seconds = max(
+    expires_at = token.expires_at if token else datetime.fromtimestamp(access_token["exp"], tz=timezone.utc)
+    
+    # Calculating token remaining seconds
+    remaining_seconds = max(
             int(
                 (
-                    token.expires_at - datetime.now(timezone.utc)
+                    expires_at - datetime.now(timezone.utc)
                 ).total_seconds()
             ),
             1,
         )
 
-        try:
+    try:
+        logger.info("Adding the access jti to redis")
+        
+        if revoked:  
+            # Adding the access jti to redis as revoked if it found in the DB. 
             app_cache.set(
                 key,
                 1,
                 ex=remaining_seconds,
             )
-            logger.info("Access jti added to redis")
+            logger.info("Revoked access jti added to redis")
+
+        else:
+            # Adding vaild access jti to redis for easier look up next time
+            app_cache.set(
+                key,
+                0,
+                ex=remaining_seconds,
+            )
+            logger.info("Access jti added to redis but not revoked")
             
-        except Exception:
-            # DB already contains the authoritative state.
-            pass
+    except Exception:
+        # DB already contains the authoritative state.
+        logger.info("Error access jti not added to redis. Perphaps redis is down")
+        pass
 
     return revoked

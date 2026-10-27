@@ -1,8 +1,6 @@
 from rest_framework import status
 from apps.authentication.services.b_social_auth import BSocialAuthService
 from apps.authentication.models import UserToken
-from apps.user.service import ProfileService
-from django.contrib.auth import get_user_model
 from datetime import datetime, timezone, timedelta
 import pytest
 
@@ -172,3 +170,28 @@ def test_b_social_auth_service_verify_otp_for_password_reset_succeeds(create_ver
     token = UserToken.objects.filter(email=user.email).first()
     assert token.attempts == 0
     assert token.otp_hash is None
+
+
+@pytest.mark.django_db
+def test_b_social_auth_service_verify_otp_fails_user_or_token_record_not_found(create_verified_user):
+
+    user = create_verified_user
+    
+    UserToken.objects.create(
+            email=user.email, 
+            purpose="PASSWORD_RESET", 
+            otp_hash=BSocialAuthService().hash_value("100100"),
+            expires_at= datetime.now(timezone.utc) + timedelta(minutes=10)
+        )
+
+    data = {
+        "email": "mia9@gmail.com",
+        "otp": "100100",
+        "purpose": "PASSWORD_RESET"
+    }
+
+    _, error = BSocialAuthService().OTP_verification(data)
+
+    assert isinstance(error, dict) == True
+    assert error != {}
+    assert error["status_code"] == status.HTTP_400_BAD_REQUEST

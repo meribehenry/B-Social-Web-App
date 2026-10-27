@@ -18,13 +18,13 @@ logger = get_logger(__name__)
 )
 def delete_unverified_user(self, *args, **kwargs):
     User = get_user_model()
-    passed_time = datetime.now(timezone.utc) -  timedelta(minutes=15)
+    passed_time = datetime.now(timezone.utc) - timedelta(minutes=15)
     try:
-        results = User.objects.filter(email_verified=False, date_joined__lt =passed_time  ).delete()
+        results = User.objects.filter(email_verified=False, date_joined__lt =passed_time).delete()
         logger.info(f"Deleted {results[0]} unverified user from the User table", extra={"time": datetime.now(timezone.utc)})
 
     except Exception as exc:
-        logger.error(f'Could not delete unverified user', extra={"time": datetime.now(timezone.utc), "trace": e})
+        logger.error(f'Could not delete unverified user', extra={"time": datetime.now(timezone.utc), "trace": exc})
 
         retries_left = self.max_retries - self.request.retries  # type: ignore
         logger.info(f"Retrying delete_unverified_user {retries_left} left")
@@ -51,7 +51,7 @@ def delete_expired_otp_or_reset_token(self, *args, **kwargs):
         )
 
     except Exception as exc:
-        logger.error(f'Could not delete expired OTP and Reset token', extra={"time": datetime.now(timezone.utc), "trace": e})
+        logger.error(f'Could not delete expired OTP and Reset token', extra={"time": datetime.now(timezone.utc), "trace": exc})
         retries_left = self.max_retries - self.request.retries  # type: ignore
         logger.info(f"Retrying delete_expired_otp_or_reset_token {retries_left} left")
         raise self.retry(exc=exc)
@@ -78,7 +78,7 @@ def delete_expired_access_token(self, *args, **kwargs):
     )
         
     except Exception as exc:
-        logger.error(f'Could not delete expired revoked access token', extra={"time": datetime.now(timezone.utc), "trace": e})
+        logger.error(f'Could not delete expired revoked access token', extra={"time": datetime.now(timezone.utc), "trace": exc})
         retries_left = self.max_retries - self.request.retries  # type: ignore
         logger.info(f"Retrying delete_expired_access_token {retries_left} left")
         raise self.retry(exc=exc)
@@ -104,7 +104,7 @@ def delete_expired_refresh_token(self, *args, **kwargs):
         )
         
     except Exception as exc:
-        logger.error(f'Could not delete expired refresh token', extra={"time": datetime.now(timezone.utc), "trace": e})
+        logger.error(f'Could not delete expired refresh token', extra={"time": datetime.now(timezone.utc), "trace": exc})
         retries_left = self.max_retries - self.request.retries  # type: ignore
         logger.info(f"Retrying delete_expired_revoked_token {retries_left} left")
         raise self.retry(exc=exc)

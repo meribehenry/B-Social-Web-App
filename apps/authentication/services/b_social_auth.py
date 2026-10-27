@@ -245,7 +245,7 @@ class BSocialAuthService():
         user = self.user_service.get_user_object(identifier=email, retrival_method="email")
 
         if purpose == "REGISTRATION" and user and user.email_verified:
-            self.error = self.service_response_builder.conflict_error(
+            self.error = self.service_response_builder.bad_request_error(
                 message =  "Account already exists. Login to continue",
             )
             logger.info("Resending OTP failed for REGISTRATION. User already have an active account")
@@ -410,14 +410,20 @@ class BSocialAuthService():
 
     def logout(self, access_token, refresh_token):
         logger.info("Logging out starting....")
-        
-        # Revoke current access token.
-        if access_token:
-            revoke_access_token_object(access_token)
 
         # Revoke refresh token.
         if refresh_token:
-            revoke_refresh_token(refresh_token)
+            r = revoke_refresh_token(refresh_token)
+
+            if r == False:
+                self.error = self.service_response_builder.bad_request_error(message="Log out failed. Refresh token invalid")
+                logger.info("Log out failed. Refresh token invalid")
+        
+                return self.result, self.error
+
+        # Revoke current access token.
+        if access_token:
+            r = revoke_access_token_object(access_token)
 
         self.result = self.service_response_builder.result(message="Successfully logged out")
         logger.info("Successfully logged out")

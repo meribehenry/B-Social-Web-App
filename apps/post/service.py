@@ -3,11 +3,19 @@ from django.db import transaction
 from rest_framework import status
 from apps.upload.models import UploadBatch
 from core.response import ServiceResponseBuilder
-from .serializer import CreatePostSerializer, EditPostSerializer, PostSerializer
+from .serializer import CreatePostSerializer, EditPostSerializer, PostSerializer, SearchResultSerializer
 from .models import Post, PostMedia, PostTag
 from apps.upload.service import UploadService
 from apps.upload.tasks import delete_media_file_task
 from core.logger.logger_client import get_logger
+from .filter import PostFilter
+from django_filters.rest_framework import DjangoFilterBackend
+from apps.post.pagination import PostCursorPagination
+from .filter import PostFilter
+from rest_framework.response import Response
+from django.db.models import Q, Count, Prefetch
+from django.contrib.auth import get_user_model
+
 
 
 logger = get_logger(__name__)
@@ -315,4 +323,68 @@ class PostService():
             delete_media_file_task.delay(public_ids=sorted_old_post_medias["video"], resource_type="video") # type: ignore
 
         logger.info("Post deleted successfully")
+        return self.result, self.error
+
+
+    def view_posts(self, request, current_view_instance):
+        search_term = request.GET.get("search")
+
+        # 1. Base queryset with annotations - needed for ordering by likes_count
+        # queryset = Post.objects.select_related('author').annotate(
+        #     likes_count=Count('likes', distinct=True),
+        #     comments_count=Count('comments', distinct=True)
+        # )
+
+        if search_term:
+            User = get_user_model()
+            queryset = User.objects.filter(
+                Q(username__icontains=search_term) |
+                Q(profile__display_name__icontains=search_term) |
+                Q(posts__title__icontains=search_term) |
+                Q(posts__content__icontains=search_term) |
+                Q(posts__tags__name__icontains=search_term)
+            ).distinct().prefetch_related(
+                Prefetch("posts", queryset=Post.objects.defer("batch_id").prefetch_related("tags").order_by("-date_created"), to_attr="user_posts")
+                ).select_related("profile")
+
+        else:
+            queryset = Post.objects.defer("batch_id").select_related("author").prefetch_related("medias", "tags").all() 
+
+
+            # Apply django-filter
+            filterset = PostFilter(request.GET, queryset=queryset, request=request)
+            if not filterset.is_valid():
+                return Response(filterset.errors, status=400)
+            queryset = filterset.qs
+        
+        # NO OrderingFilter here! Cursor pagination handles it.
+
+        # Differentiate different page for search and normal post retrival
+        paginator = PostCursorPagination()
+
+        if search_term:
+            # Handles search pagination
+            paginator.ordering = "-date_joined"
+            paginator.ordering_fields = ["date_joined", "username", "id"]
+            paginator.page_size = 10
+            paginator.max_page_size = 20
+
+            # Apply Cursor Pagination (it calls get_ordering() internally)
+            page = paginator.paginate_queryset(queryset, request, view=current_view_instance)
+
+        else:
+            page = paginator.paginate_queryset(queryset, request, view=current_view_instance)
+
+
+        serializer_class, key_name = (PostSerializer, "posts") if not search_term else (SearchResultSerializer, "users")
+
+        if page is not None:
+            serializer = serializer_class(page, many=True)
+            self.result = self.service_response_builder.result(data={key_name:serializer.data})
+            return self.result, self.error
+
+        # Fallback
+        serializer = serializer_class(queryset, many=True)
+
+        self.result = self.service_response_builder.result(data={"posts":serializer.data})
         return self.result, self.error

@@ -7,7 +7,6 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from .serializers import BSocialTokenRefreshSerializer
 from .services.b_social_auth import BSocialAuthService
 from core.response import APISuccessResponseHandler, APIErrorResponseHandler
-from time import time
 from core.logger.logger_client import get_logger
 from . import throttle
 
@@ -16,16 +15,6 @@ from . import throttle
 api_success_response_handler = APISuccessResponseHandler()
 api_error_response_handler = APIErrorResponseHandler()
 logger = get_logger(__name__)
-
-class TestView(APIView):
-    permission_classes = []
-
-    def get(self, request):
-        start_time = time()
-
-        # send_welcome_email.delay()
-
-        return Response("Welcome to the party")
 
 
 class RegristrationView(APIView):

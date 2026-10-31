@@ -60,3 +60,31 @@ class EditPostSerializer(CreatePostSerializer):
     # include_upload_batch = serializers.BooleanField(required=True) 
     # include_tag = serializers.BooleanField(required=True) 
     pass
+
+
+
+class UserProfileSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Profile
+        fields = ["display_name", "profile_pic_url"]
+
+
+class SearchResultSerializer(serializers.ModelSerializer):
+    profile = UserProfileSerializer(read_only=True)
+    posts = serializers.SerializerMethodField()
+
+    def get_posts(self, obj):
+        posts = getattr(obj, "user_posts", [])[:3]
+        return PostSerializer(posts, many=True).data
+
+
+    class Meta:
+        model = get_user_model_class()
+
+        fields = ["id", "username", "gender", "is_active", "date_joined", "email_verified", "role", "profile", "status", "posts"]
+        read_only_fields = ["id", "username", "gender", "is_active", "date_joined", "email_verified", "role", "profile", "status", "posts"]
+
+
+
+

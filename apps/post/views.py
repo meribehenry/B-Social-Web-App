@@ -56,17 +56,30 @@ class EditPostView(APIView):
 
 
 class ViewPostView(generics.RetrieveAPIView):
-    # permission_classes = [IsAuthenticated]
-
     queryset = Post.objects.defer("batch_id").select_related("author").prefetch_related("medias", "tags").all()
     serializer_class = PostSerializer
 
 
-class ViewPostsView(generics.ListAPIView):
+class ViewPostsView(APIView):
     permission_classes = [IsAuthenticated]
-    
-    queryset = Post.objects.defer("batch_id").select_related("author").prefetch_related("medias", "tags").all()
-    serializer_class = PostSerializer
+
+    # Attributes read by SearchFilter and DynamicCursorPagination
+    ordering_fields = ['date_created',]# [ 'likes_count', 'comments_count'] # must match pagination
+
+    def get(self, request):
+        result, error = PostService().view_posts(request, current_view_instance=self)
+        if error:
+            return api_error_response.error(
+                message=error.get("message"),
+                error=error.get("message"),
+                status_code=error.get("status")
+            )
+
+        return api_success_response.success(
+            message=result.get("message"),
+            data=result.get("data"),
+            status_code=result.get("status")
+        )
 
 
 class DeletePostView(APIView):
@@ -115,19 +128,3 @@ class ViewEditDeletePostDispatcherView(APIView):
         print(f"KWARGS: {kwargs}")
         view = DeletePostView.as_view()
         return view(request._request, *args, **kwargs)
-
-
-
-# class DeletePostView(generics.DestroyAPIView):
-#     permission_classes = [IsAuthenticated]
-
-#     queryset = Post.objects.defer("batch_id").select_related("author").prefetch_related("medias", "tags").all()
-#     serializer_class = PostSerializer
-
-#     def destroy(self, request, *args, **kwargs):
-#         instance = self.get_object()
-#         self.perform_destroy(instance)
-#         return Response(
-#             {"message": "Post deleted successfully"},
-#             status=status.HTTP_200_OK   # or 204 if you prefer
-#         )

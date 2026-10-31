@@ -74,11 +74,11 @@ REST_FRAMEWORK = {
         "core.render.UniversalJSONRenderer"
     ],    
     "EXCEPTION_HANDLER": "core.exceptions.custom_exception_handler",
-  
-    # "DEFAULT_PERMISSION_CLASSES": [        
-    #     "rest_framework.permissions.IsAuthenticated",    
-    # ],    
-    "DEFAULT_PAGINATION_CLASS": "core.pagination.DynamicPageNumberPagination",    
+      
+    "DEFAULT_PAGINATION_CLASS": [
+        "core.pagination.DynamicCursorPagination",
+        "core.pagination.DynamicPageNumberPagination",    
+    ],
     "PAGE_SIZE": 20,    
     "DEFAULT_THROTTLE_CLASSES": [  
         "core.rate_limiting.throttle.GlobalTokenBucketThrottle"        

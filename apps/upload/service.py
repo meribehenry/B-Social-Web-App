@@ -132,6 +132,7 @@ class UploadService():
 
 
     def start_upload(self, data, user) -> tuple:
+        """This handles the signature creation """
         logger.info("Starting upload....")
         serializer = MediaUploadSerializer(data=data)
         serializer.is_valid(raise_exception=True)
@@ -225,6 +226,7 @@ class UploadService():
         return self.result, self.error
 
     def check_upload_batch(self, batch_id):
+        """This checks if the upload batch exists in the database"""
         logger.info("Checking the upload batch")
         batch = UploadBatch.objects.prefetch_related("uploads",).filter(id=batch_id).first()
 
@@ -250,7 +252,10 @@ class UploadService():
         
 
     def validate_and_update_upload_session(self, batch, not_allowed_purpose, service_purpose:str):
-        """Batch must be loaded with prefetch"""
+        """
+        Batch must be loaded with prefetch\n
+        This validates that every file the frontend uploaded is correctly done
+        """
         logger.info("Validating batch upload sessions")
 
         medias = []
@@ -258,10 +263,7 @@ class UploadService():
             for upload_session in batch.uploads.all():
                 if upload_session.status == "UPLOADING":
                     try:
-                        # result = cloudinary.api.resource(upload_session.public_id, resource_type=upload_session.resource_type)
-                        result = {
-                            "secure_url": "ops.png",
-                        }
+                        result = cloudinary.api.resource(upload_session.public_id, resource_type=upload_session.resource_type)
 
                     except cloudinary.exceptions.NotFound:
                         logger.info("Media file not found")
@@ -309,39 +311,39 @@ class UploadService():
     def validate_webhook_result(self, headers: Mapping["str", "str"], raw_body):
         logger.info("Validation webhook result....")
 
-        # timestamp = headers.get('X-Cld-Timestamp')
-        # signature = headers.get('X-Cld-Signature')
+        timestamp = headers.get('X-Cld-Timestamp')
+        signature = headers.get('X-Cld-Signature')
 
-        # if not timestamp or not signature:
-        #     return self.result, self.service_response_builder.bad_request_error(
-        #         message="Signature is missing"
-        #     )
+        if not timestamp or not signature:
+            return self.result, self.service_response_builder.bad_request_error(
+                message="Signature is missing"
+            )
 
-        # # 2. Anti-replay: reject if older than 5 mins
-        # try:
-        #     if abs(int(datetime.now(timezone.utc).timestamp()) - int(timestamp)) > 300:
-        #         return self.result, self.service_response_builder.bad_request_error(
-        #             message="Timestamp too old"
-        #         )
-        # except:
-        #     return self.result, self.service_response_builder.bad_request_error(
-        #         message="Invalid timestamp"
-        #     )
+        # 2. Anti-replay: reject if older than 5 mins
+        try:
+            if abs(int(datetime.now(timezone.utc).timestamp()) - int(timestamp)) > 300:
+                return self.result, self.service_response_builder.bad_request_error(
+                    message="Timestamp too old"
+                )
+        except:
+            return self.result, self.service_response_builder.bad_request_error(
+                message="Invalid timestamp"
+            )
 
-        # # 3. Compute expected signature
-        # payload_to_sign = raw_body + timestamp.encode("utf-8") + settings.CLOUDINARY_API_SECRET.encode("utf-8")
-        # expected_signature = hashlib.sha1(payload_to_sign).hexdigest()
+        # 3. Compute expected signature
+        payload_to_sign = raw_body + timestamp.encode("utf-8") + settings.CLOUDINARY_API_SECRET.encode("utf-8")
+        expected_signature = hashlib.sha1(payload_to_sign).hexdigest()
     
-        # # Some accounts use SHA256 now, if SHA1 fails try this:
-        # # expected_signature = hashlib.sha256(payload_to_sign).hexdigest()
+        # Some accounts use SHA256 now, if SHA1 fails try this:
+        # expected_signature = hashlib.sha256(payload_to_sign).hexdigest()
 
-        # # 4. Secure compare
-        # if not hmac.compare_digest(expected_signature, signature):
-        #     return self.result, self.service_response_builder.forbidden_error(
-        #         message="Invalid signature"
-        #     )
+        # 4. Secure compare
+        if not hmac.compare_digest(expected_signature, signature):
+            return self.result, self.service_response_builder.forbidden_error(
+                message="Invalid signature"
+            )
 
-        # # Parse the raw_body
+        # Parse the raw_body
         result = json.loads(raw_body)
  
         upload_session = UploadSession.objects.select_related("batch").filter(id=result.get("upload_id")).first()
@@ -373,6 +375,7 @@ class UploadService():
     def validate_upload(self, batch_id:str, service_purpose:str):
         """
         This is used by services to vaidate what the user uploaded
+        Service purpose includes (post or profile)
         """
         logger.info("Validating the upload....")
         not_allowed_purpose = {"post", "profile_pic", "profile_banner"}

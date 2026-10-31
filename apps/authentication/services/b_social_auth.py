@@ -36,8 +36,9 @@ class BSocialAuthService():
 
     def generate_or_update_otp(self, email:str, purpose:str) -> str :
         """ This function generate 6-digit otp and stores it in the database with the email parameter to track users otp"""
-        otp_code = random.randint(100000, 999999)
+        otp_code = random.randint(100000, 999999)   # Get random 6 digits number
 
+        # Create the db record
         UserToken.objects.update_or_create(
             email=email, 
             purpose=purpose, 
@@ -64,13 +65,16 @@ class BSocialAuthService():
         return True
 
     def create_username(self, email:str) -> str:
+        """This creates the user name on registration"""
+
         while True:
             name = email.split("@")[0][:13]
             random = secrets.token_hex(4)
             username = name + "_" + random
 
             user = self.user_service.get_user_object(identifier=username, retrival_method="username")
-            if not user:
+
+            if not user:    # If no user found return the user name
                 logger.info(f"Username {username} created for {email}")
                 return username    
 

@@ -16,8 +16,8 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
 
-        fields = ["id", "username", "gender", "is_active", "date_joined", "email_verified", "role", "is_staff", "profile"]
-        read_only_fields = ["id", "email" , "username", "gender", "is_active", "date_joined", "email_verified", "role", "is_staff", "profile"]
+        fields = ["id", "username", "gender", "status", "is_active", "date_joined", "email_verified", "role", "is_staff", "profile"]
+        read_only_fields = ["id", "email" , "status", "username", "gender", "is_active", "date_joined", "email_verified", "role", "is_staff", "profile"]
 
 
 class EditProfileSerializer(serializers.Serializer):
@@ -25,6 +25,7 @@ class EditProfileSerializer(serializers.Serializer):
     bio = serializers.CharField(max_length=500, required=False, allow_null=True, allow_blank=True, default=None)
     profession = serializers.CharField(max_length=100, required=False, allow_null=True, allow_blank=True, default=None)
     batch_id = serializers.CharField(required=False, allow_null=True, allow_blank=True, default=None)
+    username = serializers.CharField(max_length=20)
 
 
 class ProfileUserSerializer(serializers.ModelSerializer):

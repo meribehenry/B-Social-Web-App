@@ -61,7 +61,6 @@ class UserService():
         Changes a user password
         """
         user.password = password
-        print(user.password)
         user.save()
 
     def check_username_free(self, username:str) -> bool:
@@ -74,8 +73,9 @@ class UserService():
             return True
         return False 
 
-    def save_username(self, username):
-        User.objects.filter(username=username).update(username=username)
+    def save_username(self, username:str, user:User):
+        user.username = username
+        user.save(update_fields=["username"])
         return True
 
 
@@ -190,7 +190,7 @@ class ProfileService():
         bio = serializer.data.get("bio", "")
         batch_id = serializer.data.get("batch_id", "")
         profession =  serializer.data.get("profession", "")
-        username = serializer.get("username", "")
+        username = serializer.data.get("username", "")
 
 
         if display_name is None and batch_id is None and bio is None and profession is None:
@@ -235,8 +235,7 @@ class ProfileService():
         with transaction.atomic():
 
             if username:
-                self.user_service.save_username(username)
-                pass
+                self.user_service.save_username(username, profile.user)
 
             if display_name:
                 profile.display_name = display_name

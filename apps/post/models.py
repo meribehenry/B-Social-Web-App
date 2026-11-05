@@ -1,5 +1,5 @@
 from django.db import models
-from django.utils import timezone
+from django.utils import timezone 
 from core.model.base_model import BaseModel
 from django.utils.text import slugify
 from django.conf import settings
@@ -29,7 +29,7 @@ class Post(BaseModel):
     date_created = models.DateTimeField(default=timezone.now, editable=False)
     date_edited = models.DateTimeField(null=True)
     is_edited = models.BooleanField(default=False)
-    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, db_index=True, related_name="posts")
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="posts")
     tags = models.ManyToManyField("PostTag", related_name="posts", blank=True)
     batch_id = models.UUIDField(max_length=50, null=True, blank=True)
 

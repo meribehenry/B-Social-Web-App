@@ -36,6 +36,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'apps.comment.apps.CommentConfig',
     'apps.user.apps.UserConfig',
     'apps.post.apps.PostConfig',
     'apps.upload.apps.UploadConfig',

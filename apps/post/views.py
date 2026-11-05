@@ -5,6 +5,7 @@ from .service import PostService
 from rest_framework import generics
 from .serializer import PostSerializer
 from core.response import APIErrorResponseHandler, APISuccessResponseHandler
+from . import throttle
 
 
 api_success_response = APISuccessResponseHandler()
@@ -13,6 +14,7 @@ api_error_response = APIErrorResponseHandler()
 
 class CreatePostView(APIView):
     permission_classes = [IsAuthenticated]
+    throttle_classes = [throttle.CreatePostTokenBucketThrottle]
 
     def post(self, request):
         post_service = PostService()
@@ -33,6 +35,7 @@ class CreatePostView(APIView):
 
 
 class EditPostView(APIView):
+    throttle_classes = [throttle.EditPostTokenBucketThrottle]
     permission_classes = [IsAuthenticated]
 
     def patch(self, request, *args, **kwargs):
@@ -44,14 +47,14 @@ class EditPostView(APIView):
         if error:
             return api_error_response.error(
                 message=error.get("message"),
-                error=error.get("message"),
-                status_code=error.get("status")
+                error=error.get("error"),
+                status_code=error.get("status_code")
             )
 
         return api_success_response.success(
             message=result.get("message"),
             data=result.get("data"),
-            status_code=result.get("status")
+            status_code=result.get("status_code")
         )
 
 
@@ -63,22 +66,19 @@ class ViewPostView(generics.RetrieveAPIView):
 class ViewPostsView(APIView):
     permission_classes = [IsAuthenticated]
 
-    # Attributes read by SearchFilter and DynamicCursorPagination
-    ordering_fields = ['date_created',]# [ 'likes_count', 'comments_count'] # must match pagination
-
     def get(self, request):
         result, error = PostService().view_posts(request, current_view_instance=self)
         if error:
             return api_error_response.error(
                 message=error.get("message"),
-                error=error.get("message"),
-                status_code=error.get("status")
+                error=error.get("error"),
+                status_code=error.get("status_code")
             )
 
         return api_success_response.success(
             message=result.get("message"),
             data=result.get("data"),
-            status_code=result.get("status")
+            status_code=result.get("status_code")
         )
 
 
@@ -93,14 +93,14 @@ class DeletePostView(APIView):
         if error:
             return api_error_response.error(
                 message=error.get("message"),
-                error=error.get("message"),
-                status_code=error.get("status")
+                error=error.get("error"),
+                status_code=error.get("status_code")
             )
 
         return api_success_response.success(
             message=result.get("message"),
             data=result.get("data"),
-            status_code=result.get("status")
+            status_code=result.get("status_code")
         )
 
 
@@ -116,7 +116,6 @@ class CreateListPostDispatcherView(APIView):
 class ViewEditDeletePostDispatcherView(APIView):
 
     def get(self, request, *args, **kwargs):
-        print(f"KWARGS: {kwargs}")
         view = ViewPostView.as_view()
         return view(request._request, *args, **kwargs)
 
@@ -125,6 +124,5 @@ class ViewEditDeletePostDispatcherView(APIView):
         return view(request._request, *args, **kwargs)
 
     def delete(self, request, *args, **kwargs):
-        print(f"KWARGS: {kwargs}")
         view = DeletePostView.as_view()
         return view(request._request, *args, **kwargs)

@@ -27,6 +27,9 @@ class UserManager(BaseUserManager):
         user = self.model(**fields)
 
         user.save(using=self._db)
+        display_name=email.split("@")[0]
+
+        Profile.objects.create(display_name=display_name, user=user)
         return user
 
     def create_superuser(self, **fields):
@@ -34,6 +37,10 @@ class UserManager(BaseUserManager):
         fields.setdefault("is_superuser", True)
         fields.setdefault("is_active", True)
         fields.setdefault("email_verified", True)
+        fields.setdefault("role", "admin")
+        fields.setdefault("date_joined", timezone.now())
+        fields.setdefault("has_received_welcome_email", True)
+        fields.setdefault("status", "active")
 
         if fields.get("is_staff") is not True:
             raise ValueError("Superuser must have is_staff=True")
@@ -57,8 +64,13 @@ class User(AbstractBaseUser, PermissionsMixin):
     email_verified = models.BooleanField(default=False)
     has_received_welcome_email = models.BooleanField(default=False)
     date_joined = models.DateTimeField(default=timezone.now, editable=False)
-    status = models.CharField(default="pending_verification")
-    role = models.CharField(default="user")
+    status = models.CharField(default="pending_verification", choices=[
+        ("pending_verification", "PENDING VERIFICATION"), 
+        ("active", "ACTIVE"),
+        ("suspended", "SUSPENDEND"),
+        ("deleted", "DELETED")
+        ])
+    role = models.CharField(default="user", choices=[("user", "User"), ("admin", "Admin"), ("moderator", "Moderator")])
     is_active = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
 

@@ -68,7 +68,7 @@ class BSocialAuthService():
         """This creates the user name on registration"""
 
         while True:
-            name = email.split("@")[0][:13]
+            name = email.split("@")[0][:11]
             random = secrets.token_hex(4)
             username = name + "_" + random
 

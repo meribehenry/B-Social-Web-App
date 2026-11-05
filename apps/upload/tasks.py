@@ -2,7 +2,7 @@ from celery import shared_task
 import cloudinary.api
 from core.logger.logger_client import get_logger
 from core.cloudinary_service import CloudinaryService
-from datetime import datetime, timezone, timedelta #
+from datetime import datetime, timezone, timedelta 
 from django.db import transaction
 from django.db.models import Prefetch
 from .models import UploadSession, UploadBatch
@@ -41,7 +41,7 @@ def delete_media_file_task(self, public_id: str|None = None, public_ids: list = 
 
             deleted_media_file = result.get("deleted", {})
 
-            for id, status in deleted_media_file.values():
+            for id, status in deleted_media_file.items():
 
                 if status == "not_found":
                     logger.info(f"Media file {id} not found")

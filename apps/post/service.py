@@ -354,7 +354,12 @@ class PostService():
             # Apply django-filter
             filterset = PostFilter(request.GET, queryset=queryset, request=request)
             if not filterset.is_valid():
-                return Response(filterset.errors, status=400)
+                self.error = {
+                    "message": "Filter invalid", 
+                    "error": filterset.errors,
+                    "status_code": status.HTTP_400_BAD_REQUEST
+                    }
+                return self.result, self.error
             queryset = filterset.qs
         
         # NO OrderingFilter here! Cursor pagination handles it.
@@ -386,5 +391,9 @@ class PostService():
         # Fallback
         serializer = serializer_class(queryset, many=True)
 
-        self.result = self.service_response_builder.result(data={"posts":serializer.data})
+        self.result = self.service_response_builder.result(data={key_name:serializer.data})
         return self.result, self.error
+
+
+    def get_post_model(self):
+        return Post

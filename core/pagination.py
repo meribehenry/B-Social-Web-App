@@ -33,3 +33,11 @@ class DynamicCursorPagination(CursorPagination):
         except Exception:
             raise ValidationError({"cursor": "Invalid or expired cursor token. Remove ?cursor= to start from first page."})
 
+
+def build_pagination_dict(paginator):
+    return {
+        "next": paginator.get_next_link(),
+        "previous": paginator.get_previous_link(),
+        "has_next": paginator.get_next_link() is not None,
+        "has_prev": paginator.get_previous_link() is not None
+    }

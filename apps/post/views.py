@@ -78,7 +78,8 @@ class ViewPostsView(APIView):
         return api_success_response.success(
             message=result.get("message"),
             data=result.get("data"),
-            status_code=result.get("status_code")
+            status_code=result.get("status_code"),
+            pagination=result.get("pagination")
         )
 
 

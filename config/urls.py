@@ -27,6 +27,7 @@ urlpatterns = [
     path(settings.BASE_URL + 'posts/', include("apps.post.urls")),
     path(settings.BASE_URL + 'users/', include("apps.user.urls")),
     path(settings.BASE_URL + 'comments/', include("apps.comment.urls")),
+    path(settings.BASE_URL + 'posts/<uuid:pk>/comments', include("apps.comment.urls")),
 ]
 
 

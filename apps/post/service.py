@@ -14,6 +14,7 @@ from apps.post.pagination import PostCursorPagination
 from .filter import PostFilter
 from rest_framework.response import Response
 from django.db.models import Q, Count, Prefetch
+from core.pagination import build_pagination_dict
 from django.contrib.auth import get_user_model
 
 
@@ -385,7 +386,9 @@ class PostService():
 
         if page is not None:
             serializer = serializer_class(page, many=True)
-            self.result = self.service_response_builder.result(data={key_name:serializer.data})
+            self.result = self.service_response_builder.result(data={key_name:serializer.data}, 
+                                                                    pagination=build_pagination_dict(paginator)
+                                                                    )
             return self.result, self.error
 
         # Fallback
